@@ -1,0 +1,94 @@
+TEAM AGREEMENT – KONTRAKT ZESPOŁOWY
+Nazwa projektu: Rozwiązanie analityczne dla branży hotelarskiej
+Sebastian Góral, Kamil Suchta, Jakub Małkowski, Kacper Kapłon, Grzegorz Zając
+15.10.2026
+
+1. Cel porozumienia
+Celem kontraktu jest ustalenie zasad współpracy, komunikacji, odpowiedzialności oraz organizacji pracy zespołu podczas realizacji projektu w metodyce Scrum.
+
+Wszyscy członkowie zespołu zobowiązują się do przestrzegania ustalonych zasad i wspólnego dążenia do osiągnięcia Celu Produktu.
+
+2. Komunikacja
+Głównym kanałem komunikacji zespołu jest Discord / Messenger.
+
+Ważne decyzje projektowe są przekazywane wszystkim członkom zespołu.
+
+W przypadku nieobecności lub problemów z realizacją zadania należy poinformować zespół.
+
+3. Organizacja pracy
+Projekt realizowany jest w dwutygodniowych Sprintach.
+
+Zadania są przydzielane i omawiane podczas Sprint Planning.
+
+Każdy członek zespołu odpowiada za terminową realizację podjętych zadań.
+
+Postępy prac są aktualizowane w narzędziu do zarządzania projektem.
+
+Członkowie zespołu pomagają sobie wzajemnie w przypadku wystąpienia trudności.
+
+4. Spotkania Scrum
+Sprint Planning: na początku każdego Sprintu, w celu określenia Celu Sprintu i zaplanowania pracy.
+
+Daily Scrum: krótkie spotkania lub uzgodnione bieżące synchronizacje dotyczące postępów i przeszkód.
+
+Sprint Review: na zakończenie Sprintu, w celu przedstawienia rezultatów pracy i zebrania informacji zwrotnej.
+
+Sprint Retrospective: po Sprint Review, w celu omówienia współpracy i zaplanowania usprawnień.
+
+Każdy członek zespołu zobowiązuje się do punktualnego uczestnictwa w ustalonych spotkaniach.
+
+5. Podejmowanie decyzji
+Decyzje dotyczące organizacji pracy podejmowane są wspólnie, z uwzględnieniem opinii wszystkich członków zespołu.
+
+W przypadku braku jednomyślności zespół dąży do osiągnięcia konsensusu.
+
+Product Owner odpowiada za decyzje dotyczące priorytetów Product Backlogu.
+
+Scrum Master wspiera zespół w przestrzeganiu zasad Scrum i rozwiązywaniu przeszkód organizacyjnych.
+
+6. Jakość i odpowiedzialność
+Każdy członek zespołu odpowiada za jakość wykonywanej przez siebie pracy.
+
+Zadanie uznaje się za ukończone dopiero po spełnieniu ustalonych kryteriów akceptacji oraz Definition of Done.
+
+Członkowie zespołu zobowiązują się do terminowego informowania o opóźnieniach.
+
+Dokumentacja projektowa powinna być aktualna i zgodna z rzeczywistym stanem realizacji projektu.
+
+7. Rozwiązywanie konfliktów
+Problemy i nieporozumienia omawiane są otwarcie, z poszanowaniem wszystkich członków zespołu.
+
+Krytykujemy pomysły i rozwiązania, a nie osoby.
+
+W przypadku konfliktu zespół podejmuje próbę wspólnego wypracowania rozwiązania.
+
+Jeżeli konflikt nie zostanie rozwiązany, Scrum Master wspiera rozmowę i pomaga zespołowi osiągnąć porozumienie.
+
+8. Zasady współpracy
+Szanujemy czas i opinie pozostałych członków zespołu.
+
+Nie pozostawiamy zadań bez informacji o ich statusie.
+
+Nie podejmujemy istotnych decyzji projektowych bez poinformowania zespołu.
+
+Dzielimy się wiedzą i wspieramy pozostałych członków zespołu.
+
+Przyjmujemy konstruktywną krytykę i jesteśmy otwarci na zmiany.
+
+9. Aktualizacja kontraktu
+Kontrakt może zostać zmodyfikowany za zgodą wszystkich członków zespołu, w szczególności podczas Sprint Retrospective, jeżeli dotychczasowe zasady okażą się niewystarczające.
+
+10. Akceptacja kontraktu
+Wszyscy członkowie zespołu deklarują zapoznanie się z kontraktem oraz zobowiązują się do przestrzegania jego postanowień.
+
+11. Dostępność zespołu
+Członkowie zespołu deklarują swoją dostępność na początku każdego Sprintu. Spotkania odbywają się w terminach uzgodnionych wspólnie, z uwzględnieniem obowiązków zawodowych i akademickich.
+
+12. Zgłaszanie nieobecności
+Planowaną nieobecność należy zgłosić na wspólnym kanale komunikacji. W sytuacjach nagłych należy poinformować zespół najszybciej, jak to możliwe.
+
+13. Aktualizacja Trello
+Każdy członek zespołu zobowiązuje się do aktualizowania statusu swoich zadań w Trello na bieżąco, nie później niż do końca dnia, w którym nastąpiła zmiana. Zadania przechodzą przez kolumny: To Do, In Progress, Review i Done.
+
+14. Praca z Git/GitHub
+Każda nowa funkcjonalność powinna być rozwijana na osobnej gałęzi (branch). Commity powinny zawierać krótkie i zrozumiałe opisy zmian. Po ukończeniu pracy zmiany są zgłaszane poprzez Pull Request i podlegają przeglądowi przez co najmniej jednego członka zespołu przed połączeniem z główną gałęzią main.
