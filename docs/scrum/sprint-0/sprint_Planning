@@ -1,0 +1,69 @@
+Notatka ze spotkania – Sprint Planning 0
+Data spotkania: 15.10.2026 Czas trwania Sprintu: 2 tygodnie
+Rodzaj spotkania: Sprint Planning 0
+
+ 
+
+Cel Sprintu 0 (Sprint Goal)
+
+Stworzenie podstaw organizacyjnych i technicznych projektu poprzez ustalenie zasad współpracy, zdefiniowanie wymagań oraz przygotowanie środowiska pracy zespołu.
+
+Omówione zagadnienia
+
+Podczas spotkania zaplanowano działania przygotowawcze niezbędne do rozpoczęcia projektu:
+
+Ustalenie ról i odpowiedzialności członków Scrum Teamu.
+
+Opracowanie Team Agreement obejmującego komunikację, dostępność, podejmowanie decyzji, rozwiązywanie konfliktów i zgłaszanie nieobecności.
+
+Ustalenie zasad aktualizacji tablicy Trello oraz współpracy z Git/GitHub.
+
+Przygotowanie i uporządkowanie Product Backlogu.
+
+Weryfikację User Stories, ich priorytetów oraz estymacji Story Points.
+
+Określenie Definition of Done (DoD).
+
+Przygotowanie narzędzi i środowiska pracy zespołu.
+
+Planowane rezultaty Sprintu 0
+
+Na zakończenie Sprintu 0 zespół powinien posiadać:
+
+Uzgodniony i zaakceptowany Team Agreement.
+
+Skonfigurowaną tablicę Trello oraz repozytorium GitHub.
+
+Wstępną listę User Stories w Product Backlogu.
+
+Zweryfikowane estymacje Story Points dla najważniejszych User Stories.
+
+Ustalony Definition of Done.
+
+Ustalony Definition of Ready.
+
+Określone priorytety i podstawy planowania kolejnego Sprintu.
+
+Przygotowanie mapy i pytań do wywiadów/ warsztatów z interesariuszami oraz ich przeprowadzenie.
+
+Przygotowanie katalogu wymagań (ustalenie ich priorytetu oraz uzasadnienie wymagań must i want).
+
+Estymacja i planowanie
+
+Zespół zaplanował weryfikację Story Points dla elementów Product Backlogu z wykorzystaniem skali Fibonacciego (1, 2, 3, 5, 8, 13). Planowana liczba Story Points Sprintu 0: 40
+
+Ryzyka i potencjalne przeszkody
+
+Zidentyfikowano potencjalne ryzyka wymagające uwzględnienia podczas realizacji projektu:
+
+Ograniczona dostępność członków zespołu ze względu na obowiązki zawodowe i akademickie.
+
+Niedoszacowanie złożoności wybranych User Stories.
+
+Niejasności w wymaganiach funkcjonalnych.
+
+Problemy związane z konfiguracją narzędzi projektowych.
+
+Podsumowanie
+
+Podczas Sprint Planning 0 określono cel etapu przygotowawczego i zakres prac organizacyjnych oraz technicznych. Ustalono, jakie działania należy wykonać, aby zespół mógł efektywnie rozpocząć realizację funkcjonalności produktu w kolejnych Sprintach. Weryfikacja wykonania zaplanowanych zadań nastąpi na zakończenie Sprintu 0.
