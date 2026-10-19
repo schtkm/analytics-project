@@ -1,16 +1,22 @@
-# Daily Scrum – Sprint 0
+Daily #1
 
-## 19.10.2026
+Data: 19.10
+Uczestnicy: Sebastian Góral/Kamil Suchta/Grzegorz Zając/Jakub Małkowski/Kacper Kapłon
 
-**Uczestnicy:** Sebastian Góral, Kamil Suchta, Kacper Kapłon, Jakub Małkowski, Grzegorz Zając
+Co zostało zrobione?
 
-### Postęp
-- todo
+Dodano listę Blocked w Trello
 
-### Plan
-- todo
+Utworzono brakujący katalog na dokumentację na Google Drive - tutaj możemy dodawać wszystkie potrzebne dokumenty (Kamil Suchta)
 
-### Blokery
-- todo
+Część zadań została przypisana do niewłaściwych osób - na razie zostawiamy tak jak jest - w kolejnych sprintach zwrócimy na to większą uwagę
 
----
+Zwracać uwagę żeby ktoś potwierdzał zmiany na GitHubie publikowane przez inne osoby
+
+Co robimy dalej?
+
+DoR/Mapa Scenariuszy/Przygotowania do wywiadów i warsztatów/Katalog wymagań/Traceability Matrix
+
+Blockery / problemy:
+
+Katalog wymagań zablokowany do momentu wykonania wywiadów i warsztatów, i potrzebne są notatki z 3 sesji do macierzy
