@@ -1,0 +1,51 @@
+Definition of Done (DoD)
+
+Kompletność zadania i kryteria akceptacji
+
+Wszystkie zapisane w User Story kryteria akceptacji (w tym zachowanie w formacie Given/When/Then) zostały spełnione i sprawdzone.
+
+Wynik prac jest zintegrowany z głównym nurtem projektu i dostępny dla całego zespołu.
+
+Zarządzanie Kodem i Pull Requesty (PR)
+
+Kod źródłowy (w tym cały kod SQL, ETL i modele BI w formie tekstowej) został zacommitowany do odpowiedniego repozytorium Git z czytelną historią.
+
+Utworzono Pull Request (PR) do brancha docelowego.
+
+PR uzyskał akceptację od co najmniej jednego innego członka zespołu (poza autorem).
+
+Potok CI/CD dla kodu ETL i modelu (np. GitHub Actions) zakończył się sukcesem, a wszystkie automatyczne testy przeszły bez błędów (jeśli zadanie dotyczyło automatyzacji).
+
+Code Review
+
+Przegląd kodu udowodnił, że jest on czytelny, zgodny z ustalonymi konwencjami nazewniczymi zespołu oraz zoptymalizowany pod kątem wydajności (odświeżenie strony dashboardu poniżej 5 s przy pełnym wolumenie danych).
+
+Wszystkie uwagi zgłoszone podczas Code Review zostały poprawione lub przekształcone w nowe, zaplanowane zadania (jeśli wykraczały poza zakres).
+
+Wymagania dotyczące testów
+
+Zmiany zostały przetestowane lokalnie lub na środowisku deweloperskim i nie psują istniejącej funkcjonalności.
+
+Dla zadań z obszaru hurtowni i ETL: dodano wymagane testy jakości danych (np. poprawność logiki, brak pustych kluczy).
+
+Dla zadań wizualizacyjnych: dashboard jest czytelny dla nietechnicznego użytkownika, co zostało zweryfikowane testem z udziałem minimum 2 osób spoza zespołu.
+
+Bezpieczeństwo i Ochrona Danych
+
+Upewniono się, że rozwiązanie zachowuje zgodność z RODO – dane osobowe gości zostały poddane pseudonimizacji lub maskowaniu w warstwie raportowej.
+
+Dokumentacja
+
+Zaktualizowano Słownik danych i KPI, aby był zawsze dostępny i aktualny dla użytkowników biznesowych.
+
+Wprowadzono adekwatne zmiany w diagramach architektury, jeśli zadanie zmieniało strukturę lub przepływ danych.
+
+Kod zawiera przejrzyste komentarze do kluczowych transformacji analitycznych.
+
+Zweryfikowano instrukcję uruchomienia – dokumentacja nadal pozwala na odtworzenie całego środowiska od zera w czasie krótszym niż 2 godziny.
+
+Zarządzanie defektami i błędy krytyczne
+
+Nie ma żadnych znanych błędów o priorytecie krytycznym ani blokującym wynikających z tego zadania.
+
+Rozwiązanie przechodzi proces uzgodnienia sumy przychodów hurtowni ze źródłem z dokładnością do 0,1% (jeśli dotyczy modyfikacji przepływu danych finansowych).
