@@ -15,7 +15,34 @@ Zwracać uwagę żeby ktoś potwierdzał zmiany na GitHubie publikowane przez in
 
 Co robimy dalej?
 
-DoR/Mapa Scenariuszy/Przygotowania do wywiadów i warsztatów/Katalog wymagań/Traceability Matrix
+DoR/Mapa Interesariuszy/Przygotowania do wywiadów i warsztatów/Katalog wymagań/Traceability Matrix
+
+Blockery / problemy:
+
+Katalog wymagań zablokowany do momentu wykonania wywiadów i warsztatów, i potrzebne są notatki z 3 sesji do macierzy
+
+
+
+Daily #2
+
+Data: 21.10
+Uczestnicy: Sebastian Góral/Kamil Suchta/Grzegorz Zając/Jakub Małkowski/Kacper Kapłon
+
+Co zostało zrobione?
+
+Przygotowano Mapę Interesariuszy
+
+Przygotowano Definition of Done
+
+Przygotowano Definition of Ready
+
+Utworzono wstępny arkusz z wymaganiami i Traceability Matrix
+
+Przygotowano wstępny automatyczny arkusz połączony z Trello do dokumentacji wykresów typu burndown, burnup, velocity
+
+Co robimy dalej?
+
+Przygotowania do wywiadów i warsztatów/Katalog wymagań/Traceability Matrix
 
 Blockery / problemy:
 
