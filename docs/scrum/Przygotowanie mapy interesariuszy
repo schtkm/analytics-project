@@ -1,0 +1,192 @@
+1. Cel i kontekst opracowania
+
+Celem mapy jest identyfikacja kluczowych interesariuszy fikcyjnej sieci HotelGroup oraz uporządkowanie ich odpowiedzialności, celów i pytań biznesowych. Dokument wspiera zebranie wymagań dla projektowanego rozwiązania analitycznego i stanowi wynik prac analitycznych Sprintu 0.
+Sieć HotelGroup obejmuje 5–10 obiektów. Dane dotyczące rezerwacji i pobytów (PMS), gastronomii i innych usług (POS), klientów (CRM), kanałów sprzedaży (Channel Manager) oraz kosztów i budżetów są obecnie rozproszone. Projekt zakłada ich integrację i udostępnienie w raportach wspierających decyzje operacyjne i zarządcze.
+
+2. Metoda identyfikacji interesariuszy
+
+Przygotowano sześć symulowanych wywiadów z wykorzystaniem ChatGPT, w których AI odgrywała role biznesowe interesariuszy HotelGroup. Pytania obejmowały cele, problemy, wskaźniki KPI, oczekiwania wobec raportów, wpływ na projekt i stopień zainteresowania. Poniższe ustalenia przedstawiają hipotetyczne potrzeby fikcyjnych ról, nie dane z rzeczywistego przedsiębiorstwa.
+Na podstawie zapisów rozmów sporządzono karty interesariuszy. Oceny wpływu i zainteresowania zestandaryzowano do kategorii wysoki, średni lub niski; proponowany sposób współpracy jest interpretacją analityczną.
+
+3. Rejestr interesariuszy
+
+Tabela 1. Rejestr interesariuszy – cele i przykładowe pytania biznesowe.
+
+Interesariusz	Główny cel biznesowy	Przykładowe pytanie biznesowe	Wpływ / zainteresowanie
+ST-01 – Dyrektor Generalny	Wzrost rentowności sieci	Które hotele mają najwyższą i najniższą rentowność?	Wysoki / wysokie
+ST-02 – Revenue Manager	Maksymalizacja RevPAR	Kiedy warto zmienić ceny z uwagi na popyt?	Wysoki / wysokie
+ST-03 – Dyrektor hotelu	Poprawa wyniku i sprawności operacyjnej	Jakie jest obecne i przyszłe obłożenie hotelu?	Wysoki / wysokie
+ST-04 – Kierownik F&B	Zwiększenie sprzedaży i marży F&B	Jak obłożenie wpływa na przychody gastronomiczne?	Średni / wysokie
+ST-05 – Menedżer Marketingu i CRM	Większa lojalność i udział rezerwacji bezpośrednich	Jaki odsetek gości powraca do sieci?	Wysoki / wysokie
+ST-06 – Kontroler Finansowy	Kontrola budżetu i rentowności	Jak przychody i koszty wypadają na tle budżetu?	Wysoki / wysokie
+
+4. Macierz wpływu i zainteresowania
+
+Tabela 2. Klasyfikacja interesariuszy i sposób zarządzania relacjami.
+
+Poziom wpływu	Zainteresowanie niższe	Zainteresowanie wysokie
+Wysoki	Brak zidentyfikowanych ról – utrzymywanie satysfakcji	ST-01, ST-02, ST-03, ST-05, ST-06 – ścisła współpraca
+Poniżej wysokiego	Brak zidentyfikowanych ról – monitorowanie	ST-04 (wpływ średni) – regularne konsultacje i informowanie
+W macierzy 2 × 2 wpływ średni przyporządkowano do kategorii „poniżej wysokiego” tylko na potrzeby wizualizacji. W kartach interesariuszy zachowano trzy poziomy oceny.
+
+5. Charakterystyka poszczególnych interesariuszy
+
+5.1. ST-01 – Dyrektor Generalny sieci hotelowej
+Zakres odpowiedzialności: Zarządzanie strategiczne całą siecią; nadzór nad przychodami, obłożeniem, rentownością, budżetami i rozwojem hoteli.
+
+Trzy cele biznesowe:
+1.	Zwiększanie przychodów i rentowności całej sieci.
+2.	Optymalizacja obłożenia i efektywności wykorzystania pokoi przy zachowaniu odpowiednich cen.
+3.	Poprawa kontroli wyników i realizacji budżetów poszczególnych hoteli.
+
+Wybrane pytania biznesowe (6 spośród 10 uzyskanych podczas wywiadu):
+1.	Jakie są całkowite przychody i zyski całej sieci w wybranym okresie?
+2.	Które hotele osiągają najwyższą i najniższą rentowność?
+3.	Jakie jest obłożenie poszczególnych hoteli i jak zmienia się w czasie?
+4.	Czy obiekty realizują budżety przychodowe i kosztowe?
+5.	Które hotele osiągają najwyższy RevPAR?
+6.	Jak zmieniają się przychody i rentowność rok do roku?
+
+Kluczowe KPI: Przychody całkowite, GOP, marża GOP, OCC, ADR, RevPAR, realizacja budżetu, odchylenia budżetowe, ranking hoteli.
+Problem biznesowy: Brak jednego obrazu wyników sieci, opóźnione raportowanie i trudności w porównywaniu obiektów o różnej wielkości.
+
+Wpływ: Wysoki; zainteresowanie: Wysokie.
+
+Uzasadnienie oceny: Interesariusz współokreśla priorytety strategiczne oraz uczestniczy w akceptacji biznesowej rozwiązania; raporty mają bezpośrednio wspierać jego decyzje zarządcze.
+Rekomendowana współpraca (wniosek analityczny): Ścisła współpraca: konsultowanie KPI, makiet dashboardu zarządczego i kryteriów akceptacji.
+
+5.2. ST-02 – Revenue Manager
+
+Zakres odpowiedzialności: Zarządzanie cenami pokoi, obłożeniem, przychodami noclegowymi oraz efektywnością kanałów sprzedaży.
+
+Trzy cele biznesowe:
+1.	Maksymalizacja RevPAR przez równoważenie ceny i obłożenia.
+2.	Dostosowywanie cen i podaży do sezonowości, popytu oraz tempa rezerwacji.
+3.	Zwiększanie rentowności kanałów sprzedaży, w tym ograniczanie nadmiernych kosztów OTA.
+
+Wybrane pytania biznesowe (6 spośród 10 uzyskanych podczas wywiadu):
+1.	Jakie jest obłożenie każdego hotelu na najbliższe 7, 30 i 90 dni?
+2.	Jak zmieniają się ADR i RevPAR rok do roku?
+3.	W których terminach należy rozważyć zmianę cen ze względu na popyt?
+4.	Które kanały przynoszą najwyższy przychód po uwzględnieniu prowizji?
+5.	Jaki jest poziom anulacji według hotelu i kanału?
+6.	Czy tempo napływu rezerwacji na przyszłe terminy różni się od analogicznego okresu poprzedniego roku?
+
+Kluczowe KPI: OCC, ADR, RevPAR, Room Revenue, Cancellation Rate, Booking Lead Time, Booking Pace, przychód netto według kanału.
+Problem biznesowy: Dane z PMS, Channel Managera i finansów są rozproszone, co opóźnia decyzje cenowe i utrudnia analizę tempa sprzedaży.
+
+Wpływ: Wysoki; zainteresowanie: Wysokie.
+Uzasadnienie oceny: Definiuje wymagania dotyczące Revenue Management i weryfikuje poprawność KPI; będzie codziennym użytkownikiem dashboardów cenowych.
+Rekomendowana współpraca (wniosek analityczny): Ścisła współpraca: konsultacje analiz cenowych i testy wskaźników OCC, ADR i RevPAR.
+
+5.3. ST-03 – Dyrektor pojedynczego hotelu
+
+Zakres odpowiedzialności: Operacyjne zarządzanie obiektem, wyniki finansowe, recepcja i housekeeping, rezerwacje, obsługa i jakość usług.
+Trzy cele biznesowe:
+1.	Maksymalizacja przychodów i rentowności hotelu.
+2.	Poprawa efektywności operacyjnej dzięki lepszemu planowaniu personelu i zasobów.
+3.	Utrzymywanie wysokiej jakości obsługi i ograniczanie reklamacji.
+
+Wybrane pytania biznesowe (6 spośród 10 uzyskanych podczas wywiadu):
+1.	Jakie jest obecne i przewidywane obłożenie na kolejne dni?
+2.	Ile przychodu generuje hotel dziennie, tygodniowo i miesięcznie?
+3.	Które typy pokoi przynoszą największe przychody?
+4.	Jakie kanały generują najwięcej rezerwacji i przychodów?
+5.	W jakich terminach i kanałach rośnie liczba anulacji?
+6.	Czy hotel realizuje założony budżet przychodów i kosztów?
+
+Kluczowe KPI: OCC, ADR, RevPAR, Room Revenue, Total Revenue, Cancellation Rate, liczba rezerwacji, przyjazdy/wyjazdy, Budget vs Actual, koszty operacyjne.
+Problem biznesowy: Wiele niezależnych raportów utrudnia szybkie rozpoznawanie problemów operacyjnych i reagowanie na zmiany rezerwacji, obłożenia i kosztów.
+
+Wpływ: Wysoki; zainteresowanie: Wysokie.
+Uzasadnienie oceny: Jest głównym użytkownikiem raportu operacyjnego, definiuje wymagane filtry i bierze udział w jego akceptacji funkcjonalnej.
+Rekomendowana współpraca (wniosek analityczny): Ścisła współpraca: test użyteczności raportu dziennego, filtrów oraz widoczności danych własnego hotelu.
+
+5.4. ST-04 – Kierownik Food & Beverage (F&B)
+Zakres odpowiedzialności: Zarządzanie przychodami, kosztami, marżami, personelem oraz ofertą restauracji, barów i śniadań.
+
+Trzy cele biznesowe:
+1.	Zwiększanie sprzedaży usług gastronomicznych.
+2.	Poprawa rentowności przez kontrolę kosztów żywności, napojów i personelu.
+3.	Dostosowanie oferty i zasobów F&B do obłożenia, sezonowości i potrzeb gości.
+
+Wybrane pytania biznesowe (6 spośród 10 uzyskanych podczas wywiadu):
+1.	Jakie przychody generują restauracje, bary i śniadania w poszczególnych hotelach?
+2.	Które hotele osiągają najwyższą rentowność gastronomii?
+3.	Jak zmiany obłożenia hotelu wiążą się z przychodami F&B?
+4.	Które kategorie gastronomiczne przynoszą największe przychody i marże?
+5.	Jakie są koszty żywności i napojów w relacji do przychodów?
+6.	Czy punkty gastronomiczne realizują budżety przychodów i kosztów?
+
+Kluczowe KPI: Przychody F&B, marża gastronomiczna, Food Cost %, Beverage Cost %, realizacja budżetu F&B, przychód F&B na sprzedany pokój, przychód na gościa, OCC.
+Problem biznesowy: Dane sprzedażowe POS są oddzielone od PMS i finansów; utrudnia to ocenę rentowności i zależności między obłożeniem a gastronomią.
+
+Wpływ: Średni; zainteresowanie: Wysokie.
+
+Uzasadnienie oceny: Posiada istotny wpływ merytoryczny na raporty gastronomiczne, lecz bez potwierdzonych uprawnień strategicznych do zatwierdzania całego projektu.
+Rekomendowana współpraca (wniosek analityczny): Regularne konsultacje: uzgodnienie wskaźników gastronomicznych i walidacja raportów F&B.
+
+5.5. ST-05 – Menedżer Marketingu i CRM
+
+Zakres odpowiedzialności: Marketing, analiza gości, program lojalnościowy, kampanie, kanały rezerwacji i retencja klientów.
+
+Trzy cele biznesowe:
+1.	Zwiększenie udziału rezerwacji bezpośrednich.
+2.	Zwiększanie lojalności oraz liczby powracających gości.
+3.	Poprawa skuteczności kampanii marketingowych i alokacji budżetu.
+
+Wybrane pytania biznesowe (6 spośród 10 uzyskanych podczas wywiadu):
+1.	Jaki procent gości powraca do hoteli HotelGroup?
+2.	Jaki jest udział rezerwacji bezpośrednich w porównaniu z OTA?
+3.	Z jakich krajów pochodzą goście i które rynki generują największe przychody?
+4.	Które segmenty gości są najbardziej wartościowe?
+5.	Jakie są koszty pozyskiwania klientów z poszczególnych kanałów?
+6.	Czy uczestnicy programu lojalnościowego rezerwują częściej niż inni goście?
+
+Kluczowe KPI: Repeat Guest Rate, Direct Booking Share, OTA Booking Share, CAC, Marketing ROI, udział w programie lojalnościowym, przychody według segmentu/kraju, Recency/Frequency/Monetary.
+Problem biznesowy: Brak spójnej historii gościa między PMS i CRM; ograniczona ocena skuteczności kampanii i trudność rozpoznania klientów powracających.
+
+Wpływ: Wysoki; zainteresowanie: Wysokie.
+
+Uzasadnienie oceny: Wskazuje istotne wymagania dla CRM, segmentacji i ochrony danych, a także uczestniczy w testach akceptacyjnych analityki marketingowej.
+Rekomendowana współpraca (wniosek analityczny): Ścisła współpraca: konsultacje integracji identyfikatorów gości, segmentacji i zasad ochrony danych.
+
+5.6. ST-06 – Kontroler Finansowy
+
+Zakres odpowiedzialności: Budżetowanie, kontrola kosztów i przychodów, analiza odchyleń, rentowność hoteli i zgodność danych finansowych.
+
+Trzy cele biznesowe:
+1.	Kontrola kosztów i realizacji budżetów.
+2.	Zwiększanie rentowności hoteli i identyfikowanie obszarów wymagających poprawy.
+3.	Zapewnienie wiarygodnych, spójnych danych finansowych dla całej sieci.
+
+Wybrane pytania biznesowe (6 spośród 10 uzyskanych podczas wywiadu):
+1.	Które hotele osiągają najwyższą i najniższą rentowność?
+2.	Jak rzeczywiste przychody i koszty wypadają na tle budżetu?
+3.	Gdzie występują największe odchylenia kosztowe i jakie są ich przyczyny?
+4.	Jak zmienia się rentowność hoteli w kolejnych miesiącach i sezonach?
+5.	Które kategorie kosztów mają największy wpływ na wynik finansowy?
+6.	Jaki udział w przychodach i wyniku finansowym mają noclegi, gastronomia i inne usługi?
+
+Kluczowe KPI: Przychody całkowite, koszty całkowite, GOP, marża GOP, Budget Variance, realizacja budżetu, koszty wg kategorii, przychody wg działów, koszt na sprzedany pokój.
+Problem biznesowy: Niezgodności między danymi operacyjnymi a księgowymi, ręczne uzgadnianie raportów oraz trudna analiza odchyleń od budżetu.
+
+Wpływ: Wysoki; zainteresowanie: Wysokie.
+
+Uzasadnienie oceny: Definiuje zasady raportowania finansowego i uczestniczy w uzgadnianiu danych oraz testach akceptacyjnych raportów budżetowych.
+Rekomendowana współpraca (wniosek analityczny): Ścisła współpraca: uzgodnienie definicji GOP, budżetu, odchyleń i testów zgodności danych.
+
+6. Wnioski z analizy interesariuszy
+•	Wspólną potrzebą wszystkich ról jest zintegrowanie rozproszonych danych i uzgodnienie definicji KPI.
+•	Dyrektor Generalny, Dyrektor hotelu, Revenue Manager i Kontroler Finansowy oczekują porównywalnych wyników hoteli, ale z innym poziomem szczegółowości.
+•	Kierownik F&B potrzebuje integracji POS–PMS–finanse do analizy gastronomii w powiązaniu z obłożeniem.
+•	Menedżer Marketingu i CRM potrzebuje spójnej identyfikacji gości oraz ograniczenia dostępu do danych osobowych.
+•	Priorytety deklarowane przez symulowane role nie są tożsame z zatwierdzonym MoSCoW projektu. Przykładowo analiza F&B ma bazowy priorytet Should, a segmentacja gości i pickup/pace – Could. Ich ostateczna priorytetyzacja wymaga uzgodnienia z Product Ownerem.
+•	Częstotliwość danych należy uzgodnić osobno dla raportów operacyjnych i danych finansowych zamykanych miesięcznie.
+
+7. Źródła i charakter ustaleń
+
+Z symulowanych wywiadów: role, obowiązki, cele, pytania biznesowe, problemy, oczekiwane KPI, potrzeby związane z aktualizacją raportów i deklaracje dotyczące wpływu na poszczególne obszary.
+Interpretacje autora/zespołu: ujednolicona trzystopniowa ocena wpływu, przypisanie do macierzy 2 × 2, strategia angażowania interesariuszy oraz przekrojowe wnioski i zalecenia.
+Materiały źródłowe: sześć zapisów symulowanych rozmów oraz sześć szczegółowych kart interesariuszy, wskazanych przy opisach ST-01–ST-06.
+Podstawa zadania: „Projekt zaliczeniowy: rozwiązanie analityczne dla branży hotelarskiej – lista wymagań”, rozdział 4 (mapa interesariuszy, minimum pięć ról z celami i pytaniami biznesowymi) oraz rozdział 10 (Sprint 0).
