@@ -1,0 +1,41 @@
+# Log zmian priorytetów – HotelGroup
+
+**Sprint:** 0  
+**Metoda:** MoSCoW  
+**Narzędzie:** Google Sheets  
+**Status:** Przygotowany do rejestrowania zmian
+
+## 1. Cel dokumentu
+
+Log umożliwia dokumentowanie zmian priorytetów wymagań funkcjonalnych i niefunkcjonalnych podczas realizacji projektu HotelGroup.
+
+## 2. Arkusz logu
+
+https://docs.google.com/spreadsheets/d/1suPcWgmH5oiSTt3_ysintTLiHWSb3QqCu8lxMpmDsuA/edit?gid=203894181#gid=203894181
+
+## 3. Struktura logu
+
+| Kolumna | Opis |
+|---|---|
+| Data | Data zatwierdzenia zmiany |
+| ID wymagania | Identyfikator zgodny z katalogiem wymagań |
+| Było | Poprzedni priorytet MoSCoW |
+| Jest | Nowy priorytet MoSCoW |
+| Powód zmiany | Uzasadnienie zmiany |
+| Źródło decyzji | Osoba zatwierdzająca lub spotkanie, na którym podjęto decyzję |
+
+## 4. Zasady aktualizacji
+
+1. Log jest prowadzony przez cały projekt, od Sprintu 0 do Sprintu 5.
+2. Każda zatwierdzona zmiana priorytetu jest wpisywana w osobnym wierszu.
+3. Stosowane kategorie to Must, Should, Could oraz Won't.
+4. Zmiany wymagają uzgodnienia z Product Ownerem; nie można wyłączyć wymagań Must wskazanych przez prowadzącego.
+5. Po zmianie należy zaktualizować log, katalog wymagań i Product Backlog.
+6. Wcześniejsze wpisy pozostają zachowane; ponowna zmiana wymaga nowego wiersza.
+7. Pierwotne przypisanie priorytetu nie jest rejestrowane jako zmiana.
+8. Za nadzór nad aktualnością logu proponuje się Product Ownera zespołowego – Sebastiana Górala.
+9. Log jest dostępny wszystkim członkom zespołu.
+
+## 5. Status
+
+Struktura logu została przygotowana. Wpisy będą dodawane po zatwierdzeniu rzeczywistych zmian priorytetów. Zasady aktualizacji podlegają uzgodnieniu z zespołem.
