@@ -47,3 +47,21 @@ Przygotowania do wywiadów i warsztatów/Katalog wymagań/Traceability Matrix
 Blockery / problemy:
 
 Katalog wymagań zablokowany do momentu wykonania wywiadów i warsztatów, i potrzebne są notatki z 3 sesji do macierzy
+
+
+Daily #3
+
+Data: 26.10
+Uczestnicy: Sebastian Góral/Kamil Suchta/Grzegorz Zając/Jakub Małkowski/Kacper Kapłon
+
+Co zostało zrobione?
+
+Przygotowano pytania do wywiadów
+
+Co robimy dalej?
+
+Katalog wymagań/Log zmian priorytetów/User Stories w Product Backlog/Traceability Matrix
+
+Blockery / problemy:
+
+Katalog wymagań zablokowany do momentu wykonania wywiadów i warsztatów
