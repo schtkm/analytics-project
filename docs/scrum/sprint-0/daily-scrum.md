@@ -65,3 +65,21 @@ Katalog wymagań/Log zmian priorytetów/User Stories w Product Backlog/Traceabil
 Blockery / problemy:
 
 Katalog wymagań zablokowany do momentu wykonania wywiadów i warsztatów
+
+
+Daily #4
+
+Data: 28.10
+Uczestnicy: Sebastian Góral/Kamil Suchta/Grzegorz Zając/Jakub Małkowski/Kacper Kapłon
+
+Co zostało zrobione?
+
+Wstępny product backlog z user stories
+
+Co robimy dalej?
+
+Jeszcze przed końcem dokończyć Traceability Matrix
+
+Blockery / problemy:
+
+Historyjki z epic-06 i epic-07 (dokończyć wstępny product backlog)
