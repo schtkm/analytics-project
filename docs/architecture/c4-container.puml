@@ -1,0 +1,46 @@
+@startuml HotelGroup_C4_Container
+
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+title HotelGroup Analytics - C4 Container
+
+LAYOUT_LEFT_RIGHT()
+
+Person(management, "Zarząd HotelGroup", "Analizuje wyniki całej sieci hotelowej")
+Person(revenue, "Revenue Manager", "Analizuje obłożenie, ceny i kanały sprzedaży")
+Person(director, "Dyrektor hotelu", "Monitoruje wyniki swojego obiektu")
+
+System_Ext(pms, "PMS", "Źródło rezerwacji, pobytów i pokoi")
+System_Ext(channel, "Channel Manager", "Źródło kanałów sprzedaży i prowizji")
+System_Ext(finance, "System finansowy", "Źródło kosztów i budżetów")
+
+System_Boundary(analytics, "HotelGroup Analytics") {
+
+    Container(etl, "Procesy ETL/ELT", "Python + SQL", "Pobieranie danych, walidacja, transformacje i obsługa błędów")
+
+    ContainerDb(staging, "Staging", "PostgreSQL - schemat staging", "Dane źródłowe przed transformacjami biznesowymi")
+
+    ContainerDb(core, "Core", "PostgreSQL - schemat core", "Dane oczyszczone, ujednolicone i zintegrowane")
+
+    ContainerDb(mart, "Mart", "PostgreSQL - schemat mart", "Model wymiarowy: tabele faktów i wymiarów")
+
+    Container(bi, "Raporty i model semantyczny", "Power BI", "Miary KPI, dashboard zarządczy i raporty operacyjne")
+}
+
+Rel(pms, etl, "Udostępnia dane", "SQLite")
+Rel(channel, etl, "Udostępnia dane", "JSON")
+Rel(finance, etl, "Udostępnia dane", "CSV")
+
+Rel(etl, staging, "Ładuje dane źródłowe", "SQL")
+Rel(staging, core, "Przetwarzanie i integracja przez ETL/ELT", "SQL")
+Rel(core, mart, "Budowa faktów i wymiarów przez ETL/ELT", "SQL")
+
+Rel(mart, bi, "Udostępnia dane analityczne", "SQL")
+
+Rel(management, bi, "Przegląda dashboard zarządczy")
+Rel(revenue, bi, "Analizuje KPI i kanały sprzedaży")
+Rel(director, bi, "Przegląda raport operacyjny")
+
+LAYOUT_WITH_LEGEND()
+
+@enduml
