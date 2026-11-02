@@ -1,0 +1,25 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml
+
+title HotelGroup Analytics – C4 System Context
+
+Person(management, "Zarząd HotelGroup", "Analizuje wyniki i rentowność sieci hotelowej")
+Person(revenue, "Revenue Manager", "Analizuje obłożenie, ceny i kanały sprzedaży")
+Person(director, "Dyrektor hotelu", "Monitoruje wyniki operacyjne obiektu")
+
+System(analytics, "HotelGroup Analytics", "Centralne rozwiązanie analityczne integrujące dane hotelowe i udostępniające raporty KPI")
+
+System_Ext(pms, "PMS", "Dane rezerwacji, pobytów i pokoi (SQLite)")
+System_Ext(channel, "Channel Manager", "Dane kanałów sprzedaży i prowizji (JSON)")
+System_Ext(finance, "System finansowy", "Dane kosztów i budżetów (CSV)")
+
+Rel(management, analytics, "Przegląda dashboard zarządczy")
+Rel(revenue, analytics, "Analizuje KPI i kanały sprzedaży")
+Rel(director, analytics, "Przegląda raport operacyjny hotelu")
+
+Rel(pms, analytics, "Dostarcza dane", "SQLite")
+Rel(channel, analytics, "Dostarcza dane", "JSON")
+Rel(finance, analytics, "Dostarcza dane", "CSV")
+
+LAYOUT_WITH_LEGEND()
+@enduml
