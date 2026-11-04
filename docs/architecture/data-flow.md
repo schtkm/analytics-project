@@ -8,8 +8,6 @@ Dokument powstał w ramach zadania **US-03-01 – Zaprojektowanie architektury h
 
 Opis stanowi uzupełnienie diagramów C4 Context i Container oraz dokumentu `storage-layers.md`.
 
-**Status:** Projekt architektoniczny – do weryfikacji podczas implementacji.
-
 ## 2. Źródła danych
 
 W projekcie przyjęto trzy podstawowe źródła danych:
@@ -207,11 +205,3 @@ Procesy ETL/ELT wykonują operacje pomiędzy strefami; same schematy bazy danych
 | NFR-02 | Zgodność przychodów | Kontrola uzgodnienia ze źródłami |
 | NFR-03 | Ochrona danych | Pseudonimizacja lub maskowanie w raportowaniu |
 | NFR-05 | Odtwarzalność | Wersjonowane skrypty i dokumentacja uruchomienia |
-
-## 12. Status dokumentu
-
-**Status: Projekt – do weryfikacji zespołowej.**
-
-Dokument opisuje docelowe założenia architektoniczne, a nie potwierdzoną implementację.
-
-Szczegóły techniczne będą doprecyzowane podczas realizacji zadań ETL/ELT, modelowania wymiarowego i przygotowania raportów.
