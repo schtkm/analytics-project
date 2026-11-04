@@ -128,18 +128,3 @@ Zaprojektowana architektura HotelGroup uwzględnia główne warstwy rozwiązania
 Przygotowano diagramy C4 Context i Container oraz dwa proponowane rekordy decyzji architektonicznych.
 
 Nie potwierdzono jeszcze pełnej zgodności implementacyjnej z wymaganiami R-03 i NFR-05. Konieczne są dalsze prace nad modelem danych, uruchomieniem środowiska oraz weryfikacją jego odtwarzalności.
-
-## 9. Status przeglądu
-
-**Status:** Weryfikacja wstępna zakończona – oczekuje na przegląd zespołowy.
-
-Podczas przeglądu należy:
-
-1. Potwierdzić zgodność architektury z planowanym ETL/ELT.
-2. Zweryfikować podział odpowiedzialności między US-03-01 a US-03-02.
-3. Potwierdzić właściciela diagramu ERD i data lineage.
-4. Uzgodnić autorów pozostałych dwóch ADR.
-5. Zatwierdzić ADR-001 i ADR-002 albo wskazać wymagane poprawki.
-6. Zapisać uwagi i decyzje zespołu.
-
-Po przeglądzie dokument zostanie zaktualizowany zgodnie z jego wynikiem.
