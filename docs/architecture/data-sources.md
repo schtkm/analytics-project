@@ -111,14 +111,3 @@ Integracja dodatkowych źródeł będzie zależeć od zakresu funkcjonalnego prz
 | NFR-05 | Odtwarzalność środowiska | Planowane wykorzystanie źródeł i danych możliwych do odtworzenia lokalnie |
 
 **Uwaga:** Dokument opisuje planowaną realizację wymagań, a nie potwierdza ich implementacji.
-
-## 7. Status uzgodnień
-
-| Obszar | Status |
-|---|---|
-| Wybór trzech źródeł | Zaproponowano |
-| Format danych PMS | Oczekuje na potwierdzenie |
-| Format danych Channel Manager | Oczekuje na potwierdzenie |
-| Format danych finansowych | Oczekuje na potwierdzenie |
-| Wspólne identyfikatory | Oczekują na potwierdzenie |
-| Technologie ETL/ELT i BI | Do ustalenia |
