@@ -171,24 +171,3 @@ Po zatwierdzeniu architektury należy:
 | NFR-05 | Jedna baza danych i wersjonowane skrypty wdrożeniowe |
 
 Decyzja architektoniczna określa sposób planowanej realizacji wymagań. Ich spełnienie musi zostać zweryfikowane podczas implementacji.
-
-## 8. Status i zatwierdzenie
-
-**Status: Proposed**
-
-Decyzja wymaga zatwierdzenia przez zespół, w szczególności osoby odpowiedzialne za:
-
-- US-03-02 – struktury hurtowni.
-- Procesy ETL/ELT.
-- Model wymiarowy.
-
-Po akceptacji należy zmienić status na `Accepted`, zapisać datę zatwierdzenia i odnotować sposób podjęcia decyzji.
-
-## 9. Dokumenty powiązane
-
-- `ADR-001-platform.md`
-- `data-sources.md`
-- `storage-layers.md`
-- `data-flow.md`
-- `c4-context.puml`
-- `c4-container.puml`
