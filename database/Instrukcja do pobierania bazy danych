@@ -1,0 +1,22 @@
+Zgodnie z ustaleniami architektonicznymi, docelowym silnikiem bazy danych jest PostgreSQL. W projekcie nie korzystamy ze współdzielonego serwera deweloperskiego, każdy programista pracuje na własnej, lokalnej instancji bazy, którą odtwarza na swoim komputerze. Aby zachować spójność środowisk w zespole, wszelkie modyfikacje i aktualizacje struktury hurtowni muszą być realizowane wyłącznie za pomocą udostępnianych skryptów SQL (migracji). 
+
+1. Pobieranie PostgreSQL i tworzenie bazy danych 
+
+Pobieranie i instalacja: 
+
+Wejdź na oficjalną stronę pobierania: https://www.enterprisedb.com/downloads/postgres-postgresql-downloads  
+Kliknij "Download the installer" i wybierz instalator dla swojego systemu operacyjnego (najnowszą wersję). 
+Przejdź przez standardowy proces instalacji. Kluczowe: zapamiętaj hasło, które nadasz głównemu użytkownikowi (postgres). 
+Na ostatnim ekranie odznacz lub po prostu zamknij okno Stack Builder, i wykonaj reset swojej maszyny (nie ma potrzeby instalacji dodatkowych pakietów) 
+
+
+Tworzenie bazy danych hotelgroup_dw: 
+
+Uruchom program pgAdmin 4 (zainstalował się automatycznie razem z bazą) z menu Start. 
+W lewym panelu rozwiń Servers -> PostgreSQL i wpisz swoje hasło które nadałeś głównemu użytkownikowi. 
+Kliknij prawym przyciskiem myszy na Databases -> Create -> Database... 
+W oknie wpisz nazwę hotelgroup_dw i kliknij Save. Twoja główna baza jest gotowa. 
+
+ 
+
+Następnie możesz odtworzyć skrypty odtwarzające tabele schematy z git huba. (Później zostaną one dodane w jedną instrukcje) 
