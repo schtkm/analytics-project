@@ -175,24 +175,3 @@ Po zatwierdzeniu wyboru platformy zespół powinien:
 | NFR-05 | Lokalna instalacja i skrypty wdrożeniowe umożliwią przygotowanie odtwarzalnego środowiska |
 
 Spełnienie wymagań musi zostać potwierdzone podczas implementacji i testów. Sam wybór technologii nie oznacza jeszcze ich realizacji.
-
-## 7. Status i zatwierdzenie
-
-**Status decyzji: Accepted**
-
-Rekomendacja wyboru PostgreSQL wymaga zatwierdzenia przez zespół projektowy.
-
-Po zatwierdzeniu należy:
-
-- Zmienić status na `Accepted`.
-- Zapisać datę akceptacji.
-- Odnotować ewentualne uwagi zespołu.
-- Uaktualnić dokumentację architektury rozwiązania.
-
-## 8. Źródła
-
-1. Dokument wymagań prowadzącego: „Projekt zaliczeniowy: rozwiązanie analityczne dla branży hotelarskiej – lista wymagań”, rozdział 6.
-2. Dokumentacja PostgreSQL: https://www.postgresql.org/docs/
-3. Licencja PostgreSQL: https://www.postgresql.org/about/licence/
-4. Microsoft SQL Server – edycje i ograniczenia: https://learn.microsoft.com/en-us/sql/sql-server/editions-and-components-of-sql-server-latest
-5. Snowflake – informacje o cenach: https://www.snowflake.com/en/pricing-options/
