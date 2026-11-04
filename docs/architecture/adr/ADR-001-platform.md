@@ -7,7 +7,7 @@
 | ID | ADR-001 |
 | Tytuł | Wybór platformy hurtowni danych |
 | Data | 2026-10-30 |
-| Status | Proposed – oczekuje na zatwierdzenie |
+| Status | Accepted |
 | Sprint | Sprint 1 |
 | Powiązane zadanie | US-03-01 |
 | Epika | EPIC-03 – Hurtownia i modelowanie danych |
@@ -178,7 +178,7 @@ Spełnienie wymagań musi zostać potwierdzone podczas implementacji i testów. 
 
 ## 7. Status i zatwierdzenie
 
-**Status decyzji: Proposed**
+**Status decyzji: Accepted**
 
 Rekomendacja wyboru PostgreSQL wymaga zatwierdzenia przez zespół projektowy.
 
