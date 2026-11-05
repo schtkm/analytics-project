@@ -1,0 +1,19 @@
+Definicje struktur i tworzenie schematów 
+
+W hurtowni danych schematy działają jak wirtualne foldery wewnątrz bazy hotelgroup_dw, pozwalając logicznie i bezpiecznie oddzielić różne etapy przetwarzania informacji. 
+
+
+Definicje warstw: 
+
+Staging (Warstwa surowa): Strefa pierwszego zrzutu danych ze źródeł (PMS, POS, Channel Manager). Struktura tabel powinna odwzorowywać pliki wejściowe 1:1. W tej warstwie nie stosuje się restrykcyjnych kluczy obcych (Foreign Keys), aby brudne lub niekompletne dane wejściowe nie powodowały błędów i nie blokowały całego importu. 
+Core (Warstwa centralna): Pojedyncze źródło prawdy (Single Source of Truth). Trafiają tu dane po procesie transformacji – oczyszczone z duplikatów, z ujednoliconymi datami i walutami. W tej warstwie wymuszane są poprawne typy danych oraz ścisłe relacje (Primary Keys i Foreign Keys). 
+Mart (Warstwa analityczna): Docelowa strefa dla narzędzi BI (Power BI). Tabele przybierają tu format modelu wymiarowego (model gwiazdy), podzielonego na wielkie tabele faktów (np. rezerwacje, sprzedaż) oraz słownikowe tabele wymiarów (hotele, goście, daty). 
+
+ 
+Jak utworzyć schematy w bazie: 
+
+W programie pgAdmin 4 rozwiń z lewej strony Databases i kliknij raz na utworzoną bazę hotelgroup_dw. 
+Z górnego menu wybierz ikonę Query Tool (narzędzie zapytań - symbol bazy danych z lupą/piorunem). 
+W oknie edytora wklej kod z githuba odtwarzający schematy i uruchom go (klawiszem F5 lub przyciskiem Execute script): 
+
+(Później zostanie utworzona jedną instrukcja do uruchamiania skryptów)
