@@ -1,0 +1,324 @@
+import pandas as pd
+import sqlite3
+import random
+from faker import Faker
+from datetime import datetime, timedelta
+
+# 1. KONFIGURACJA
+fake = Faker('pl_PL')
+SEED = 42
+Faker.seed(SEED)
+random.seed(SEED)
+
+DB_PATH = 'pms_source.db'
+START_DATE = datetime(2024, 1, 1)
+END_DATE = datetime(2026, 6, 30)        # Rozszerzenie na rezerwacje przyszłe (do połowy 2026)
+SNAPSHOT_DATE = datetime(2026, 1, 1)  # "Dzisiejsza" data systemu
+
+HOTELS_CONFIG = [
+    {'id': 'H001', 'name': 'HotelGroup Kraków', 'city': 'Kraków', 'region': 'Małopolskie', 'rooms': 180, 'base_price': 350, 'type': 'city'},
+    {'id': 'H002', 'name': 'HotelGroup Warszawa', 'city': 'Warszawa', 'region': 'Mazowieckie', 'rooms': 250, 'base_price': 450, 'type': 'city'},
+    {'id': 'H003', 'name': 'HotelGroup Gdańsk', 'city': 'Gdańsk', 'region': 'Pomorskie', 'rooms': 150, 'base_price': 400, 'type': 'summer'},
+    {'id': 'H004', 'name': 'HotelGroup Wrocław', 'city': 'Wrocław', 'region': 'Dolnośląskie', 'rooms': 120, 'base_price': 320, 'type': 'city'},
+    {'id': 'H005', 'name': 'HotelGroup Poznań', 'city': 'Poznań', 'region': 'Wielkopolskie', 'rooms': 100, 'base_price': 300, 'type': 'city'},
+    {'id': 'H006', 'name': 'HotelGroup Zakopane', 'city': 'Zakopane', 'region': 'Małopolskie', 'rooms': 140, 'base_price': 500, 'type': 'winter'},
+    {'id': 'H007', 'name': 'HotelGroup Sopot', 'city': 'Sopot', 'region': 'Pomorskie', 'rooms': 200, 'base_price': 600, 'type': 'summer'},
+    {'id': 'H008', 'name': 'HotelGroup Karpacz', 'city': 'Karpacz', 'region': 'Dolnośląskie', 'rooms': 100, 'base_price': 380, 'type': 'winter'},
+]
+
+ROOM_TYPES = ['Standard', 'Premium', 'Apartament']
+ROOM_MULTIPLIERS = {'Standard': 1.0, 'Premium': 1.5, 'Apartament': 2.5}
+GUEST_SEGMENTS = ['Biznes', 'Turystyczny', 'Rodzinny']
+
+# 2. STRUKTURA BAZY DANYCH (DDL)
+def setup_database(conn):
+    cursor = conn.cursor()
+    cursor.execute("PRAGMA foreign_keys = ON;")
+    
+    tables = [
+        "DROP TABLE IF EXISTS pms_stays;",
+        "DROP TABLE IF EXISTS pms_reservations;",
+        "DROP TABLE IF EXISTS pms_rooms;",
+        "DROP TABLE IF EXISTS pms_guests;",
+        "DROP TABLE IF EXISTS pms_hotels;",
+        
+        """CREATE TABLE pms_hotels (
+            hotel_id TEXT PRIMARY KEY, 
+            hotel_name TEXT, 
+            city TEXT, 
+            region TEXT
+        );""",
+        """CREATE TABLE pms_guests (
+            guest_id TEXT PRIMARY KEY, 
+            first_name TEXT, 
+            last_name TEXT, 
+            email TEXT, 
+            phone TEXT
+        );""",
+        """CREATE TABLE pms_rooms (
+            room_id TEXT PRIMARY KEY, 
+            hotel_id TEXT, 
+            room_number TEXT, 
+            room_type TEXT,
+            FOREIGN KEY(hotel_id) REFERENCES pms_hotels(hotel_id)
+        );""",
+        """CREATE TABLE pms_reservations (
+            reservation_id TEXT PRIMARY KEY, 
+            hotel_id TEXT, 
+            guest_id TEXT, 
+            room_id TEXT,
+            guest_segment TEXT,
+            booking_date DATE, 
+            check_in_date DATE, 
+            check_out_date DATE, 
+            status TEXT, 
+            room_revenue REAL, 
+            cancellation_fee REAL, 
+            updated_at TIMESTAMP,
+            FOREIGN KEY(hotel_id) REFERENCES pms_hotels(hotel_id),
+            FOREIGN KEY(guest_id) REFERENCES pms_guests(guest_id),
+            FOREIGN KEY(room_id) REFERENCES pms_rooms(room_id)
+        );""",
+        """CREATE TABLE pms_stays (
+            stay_id TEXT PRIMARY KEY, 
+            reservation_id TEXT, 
+            guest_id TEXT, 
+            room_id TEXT,
+            actual_check_in DATE, 
+            actual_check_out DATE,
+            FOREIGN KEY(reservation_id) REFERENCES pms_reservations(reservation_id),
+            FOREIGN KEY(guest_id) REFERENCES pms_guests(guest_id),
+            FOREIGN KEY(room_id) REFERENCES pms_rooms(room_id)
+        );"""
+    ]
+    for q in tables:
+        cursor.execute(q)
+    conn.commit()
+
+# Pomocnicza: Mnożnik sezonowości cenowej
+def get_seasonality_price_multiplier(month, hotel_type):
+    if hotel_type == 'summer' and month in [6, 7, 8]: return 1.6
+    if hotel_type == 'winter' and month in [1, 2, 12]: return 1.5
+    if hotel_type == 'city' and month in [9, 10, 11]: return 1.2
+    return 1.0
+
+# Pomocnicza: Sezonowość popytu (długość przerwy do kolejnej rezerwacji)
+def get_gap_days(month, hotel_type):
+    if hotel_type == 'summer' and month in [6, 7, 8]:
+        return random.randint(0, 2)
+    elif hotel_type == 'winter' and month in [1, 2, 12]:
+        return random.randint(0, 2)
+    elif hotel_type == 'city' and month in [4, 5, 9, 10, 11]:
+        return random.randint(0, 3)
+    else:
+        return random.randint(3, 10)
+
+# Pomocnicza: Segment gościa na podstawie typu hotelu i dnia tygodnia
+def get_guest_segment(hotel_type, check_in_date):
+    is_weekend = check_in_date.weekday() in [4, 5, 6]
+    if hotel_type == 'city':
+        if is_weekend:
+            return random.choices(GUEST_SEGMENTS, weights=[0.2, 0.5, 0.3])[0]
+        else:
+            return random.choices(GUEST_SEGMENTS, weights=[0.7, 0.2, 0.1])[0]
+    elif hotel_type in ['summer', 'winter']:
+        return random.choices(GUEST_SEGMENTS, weights=[0.1, 0.45, 0.45])[0]
+    return random.choice(GUEST_SEGMENTS)
+
+# 3. GENEROWANIE DANYCH
+def generate_data(conn):
+    # Hotele
+    hotels = [{'hotel_id': h['id'], 'hotel_name': h['name'], 'city': h['city'], 'region': h['region']} for h in HOTELS_CONFIG]
+    df_hotels = pd.DataFrame(hotels)
+    df_hotels.to_sql('pms_hotels', conn, if_exists='append', index=False)
+
+    # Goście
+    print("Generowanie 20 000 gości...")
+    guests = [{'guest_id': f"G{str(i).zfill(6)}", 'first_name': fake.first_name(), 
+               'last_name': fake.last_name(), 'email': fake.ascii_free_email(), 
+               'phone': fake.phone_number()} for i in range(1, 20001)]
+    df_guests = pd.DataFrame(guests)
+    df_guests.to_sql('pms_guests', conn, if_exists='append', index=False)
+    guest_ids = [g['guest_id'] for g in guests]
+
+    # Pokoje
+    print("Generowanie pokoi...")
+    rooms = []
+    for h in HOTELS_CONFIG:
+        for r_num in range(1, h['rooms'] + 1):
+            rtype = random.choices(ROOM_TYPES, weights=[0.7, 0.2, 0.1])[0]
+            rooms.append({'room_id': f"{h['id']}_R{str(r_num).zfill(3)}", 
+                          'hotel_id': h['id'], 'room_number': str(r_num), 'room_type': rtype})
+    df_rooms = pd.DataFrame(rooms)
+    df_rooms.to_sql('pms_rooms', conn, if_exists='append', index=False)
+
+    # Rezerwacje i pobyty
+    print("Generowanie rezerwacji i pobytów...")
+    reservations, stays = [], []
+    res_counter, stay_counter = 1, 1
+
+    for room in rooms:
+        hotel = next(h for h in HOTELS_CONFIG if h['id'] == room['hotel_id'])
+        current_date = START_DATE + timedelta(days=random.randint(0, 5))
+        
+        while current_date < END_DATE:
+            los = random.randint(1, 7) # Długość pobytu
+            check_in = current_date
+            check_out = check_in + timedelta(days=los)
+            if check_out > END_DATE: break
+            
+            # Data utworzenia rezerwacji
+            booking_lead_days = random.randint(1, 90)
+            booking_date = check_in - timedelta(days=booking_lead_days)
+            
+            # Poprawna logika updated_at (zawsze >= booking_date oraz <= min(check_in, SNAPSHOT_DATE))
+            max_update_date = min(check_in, SNAPSHOT_DATE)
+            if max_update_date <= booking_date:
+                updated_at = booking_date
+            else:
+                days_diff = (max_update_date - booking_date).days
+                updated_at = booking_date + timedelta(days=random.randint(0, days_diff), 
+                                                       hours=random.randint(0, 23), 
+                                                       minutes=random.randint(0, 59))
+            
+            # Statusy z uwzględnieniem rezerwacji przyszłych
+            if check_out <= SNAPSHOT_DATE:
+                status = random.choices(['Zakończona', 'Anulowana', 'No-Show'], weights=[0.85, 0.10, 0.05])[0]
+            elif check_in <= SNAPSHOT_DATE < check_out:
+                status = 'W trakcie'
+            else:
+                status = random.choices(['Oczekująca', 'Anulowana'], weights=[0.90, 0.10])[0]
+
+            segment = get_guest_segment(hotel['type'], check_in)
+
+            # Finanse i Sezonowość
+            base = hotel['base_price'] * ROOM_MULTIPLIERS[room['room_type']]
+            price_mult = get_seasonality_price_multiplier(check_in.month, hotel['type'])
+            total_value = base * los * price_mult
+            
+            room_revenue, cancel_fee = 0.0, 0.0
+            if status in ['Zakończona', 'W trakcie', 'Oczekująca']:
+                room_revenue = round(total_value, 2)
+            elif status == 'Anulowana':
+                cancel_fee = round(total_value * random.choices([0, 0.3], weights=[0.7, 0.3])[0], 2)
+            elif status == 'No-Show':
+                cancel_fee = round(total_value * 1.0, 2)
+
+            res_id = f"RES{str(res_counter).zfill(8)}"
+            guest_id = random.choice(guest_ids)
+            
+            reservations.append({
+                'reservation_id': res_id, 
+                'hotel_id': hotel['id'], 
+                'guest_id': guest_id, 
+                'room_id': room['room_id'],
+                'guest_segment': segment,
+                'booking_date': booking_date.strftime('%Y-%m-%d'), 
+                'check_in_date': check_in.strftime('%Y-%m-%d'), 
+                'check_out_date': check_out.strftime('%Y-%m-%d'), 
+                'status': status, 
+                'room_revenue': room_revenue, 
+                'cancellation_fee': cancel_fee, 
+                'updated_at': updated_at.strftime('%Y-%m-%d %H:%M:%S')
+            })
+            
+            if status in ['Zakończona', 'W trakcie']:
+                actual_out = check_out if status == 'Zakończona' else SNAPSHOT_DATE
+                stays.append({
+                    'stay_id': f"STY{str(stay_counter).zfill(8)}", 
+                    'reservation_id': res_id,
+                    'guest_id': guest_id, 
+                    'room_id': room['room_id'],
+                    'actual_check_in': check_in.strftime('%Y-%m-%d'),
+                    'actual_check_out': actual_out.strftime('%Y-%m-%d')
+                })
+                stay_counter += 1
+            
+            res_counter += 1
+            gap = get_gap_days(check_out.month, hotel['type'])
+            current_date = check_out + timedelta(days=gap)
+
+    pd.DataFrame(reservations).to_sql('pms_reservations', conn, if_exists='append', index=False)
+    pd.DataFrame(stays).to_sql('pms_stays', conn, if_exists='append', index=False)
+    print(f"Wygenerowano {len(reservations)} rezerwacji oraz {len(stays)} zrealizowanych pobytów.")
+
+# 4. MODUŁ TESTÓW (10 REGUŁ JAKOŚCI DANYCH)
+def run_tests(conn):
+    print("\n--- URUCHAMIANIE TESTÓW AUTOMATYCZNYCH (10 REGUŁ JAKOŚCI DANYCH) ---")
+    cursor = conn.cursor()
+    
+    # Reguła 1: Liczba rezerwacji (>= 50 000)
+    cursor.execute("SELECT COUNT(*) FROM pms_reservations")
+    res_count = cursor.fetchone()[0]
+    assert res_count >= 50000, f"R1 Błąd: Zbyt mało rezerwacji ({res_count})"
+    print(f"[OK] Reguła 1: Liczność zbioru rezerwacji ({res_count} >= 50000)")
+    
+    # Reguła 2: Brak overbookingu (0 nałożeń dat na dany pokój)
+    cursor.execute("""
+        SELECT COUNT(*) FROM pms_reservations a
+        JOIN pms_reservations b ON a.room_id = b.room_id AND a.reservation_id != b.reservation_id
+        WHERE a.check_in_date < b.check_out_date AND a.check_out_date > b.check_in_date
+    """)
+    overlaps = cursor.fetchone()[0]
+    assert overlaps == 0, f"R2 Błąd: Wykryto {overlaps} nakładających się rezerwacji!"
+    print("[OK] Reguła 2: Brak overbookingu (0 nakładających się rezerwacji)")
+    
+    # Reguła 3: Logika dat check_in < check_out
+    cursor.execute("SELECT COUNT(*) FROM pms_reservations WHERE check_in_date >= check_out_date")
+    bad_stay_dates = cursor.fetchone()[0]
+    assert bad_stay_dates == 0, "R3 Błąd: check_out przed check_in"
+    print("[OK] Reguła 3: Poprawność sekwencji check_in < check_out")
+
+    # Reguła 4: booking_date <= check_in_date
+    cursor.execute("SELECT COUNT(*) FROM pms_reservations WHERE booking_date > check_in_date")
+    bad_booking_dates = cursor.fetchone()[0]
+    assert bad_booking_dates == 0, "R4 Błąd: Rezerwacja utworzona po przyjeździe"
+    print("[OK] Reguła 4: booking_date <= check_in_date")
+
+    # Reguła 5: updated_at >= booking_date
+    cursor.execute("SELECT COUNT(*) FROM pms_reservations WHERE datetime(updated_at) < datetime(booking_date)")
+    bad_updates = cursor.fetchone()[0]
+    assert bad_updates == 0, f"R5 Błąd: updated_at wcześniejsze niż booking_date ({bad_updates} przypadków)"
+    print("[OK] Reguła 5: Modyfikacja (updated_at) nie następuje przed utworzeniem (booking_date)")
+
+    # Reguła 6: Spójność segmentów gości
+    cursor.execute("SELECT COUNT(*) FROM pms_reservations WHERE guest_segment NOT IN ('Biznes', 'Turystyczny', 'Rodzinny') OR guest_segment IS NULL")
+    bad_segments = cursor.fetchone()[0]
+    assert bad_segments == 0, "R6 Błąd: Nieprawidłowy lub pusty segment gościa"
+    print("[OK] Reguła 6: Wszystkie rezerwacje posiadają poprawny segment gościa")
+
+    # Reguła 7: Województwa (brak uniwersalnego 'Polska')
+    cursor.execute("SELECT COUNT(*) FROM pms_hotels WHERE region = 'Polska' OR region IS NULL")
+    bad_regions = cursor.fetchone()[0]
+    assert bad_regions == 0, "R7 Błąd: Wykryto nieokreślone regiony ('Polska')"
+    print("[OK] Reguła 7: Hotele mają przypisane właściwe województwa")
+
+    # Reguła 8: Rezerwacje przyszłe (po snapshot_date)
+    cursor.execute("SELECT COUNT(*) FROM pms_reservations WHERE check_in_date > '2026-01-01' AND status = 'Oczekująca'")
+    future_res = cursor.fetchone()[0]
+    assert future_res > 0, "R8 Błąd: Brak rezerwacji przyszłych (Oczekujących)"
+    print(f"[OK] Reguła 8: Wygenerowano rezerwacje przyszłe po dacie snapshotu ({future_res} oczekujących)")
+
+    # Reguła 9: Spójność tabeli pobytów
+    cursor.execute("""
+        SELECT COUNT(*) FROM pms_stays s 
+        JOIN pms_reservations r ON s.reservation_id = r.reservation_id 
+        WHERE r.status NOT IN ('Zakończona', 'W trakcie')
+    """)
+    bad_stays = cursor.fetchone()[0]
+    assert bad_stays == 0, "R9 Błąd: Tabela pobytów zawiera anulowane rezerwacje"
+    print("[OK] Reguła 9: Tabela pms_stays powiązana wyłącznie ze zrealizowanymi pobytami")
+
+    # Reguła 10: Nieujemne przychody
+    cursor.execute("SELECT COUNT(*) FROM pms_reservations WHERE room_revenue < 0 OR cancellation_fee < 0")
+    bad_rev = cursor.fetchone()[0]
+    assert bad_rev == 0, "R10 Błąd: Wykryto ujemne wartości przychodów"
+    print("[OK] Reguła 10: Spójność przychodów (room_revenue, cancellation_fee >= 0)")
+
+if __name__ == "__main__":
+    conn = sqlite3.connect(DB_PATH)
+    setup_database(conn)
+    generate_data(conn)
+    run_tests(conn)
+    conn.close()
+    print("\nWSZYSTKIE TESTY ZALICZONE!")
