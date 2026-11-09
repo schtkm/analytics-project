@@ -1,0 +1,573 @@
+# US-03-09 — Dokumentacja ERD, data lineage i słownika modelu HotelGroup
+
+| Informacja | Wartość |
+|---|---|
+| Projekt | HotelGroup — rozwiązanie analityczne dla sieci hotelowej |
+| Zadanie | US-03-09 — Udokumentowanie ERD, data lineage i słownika modelu |
+| Sprint | Sprint 1 |
+| Etap | Dokumentacja projektowa |
+| Status | Wersja projektowa — do weryfikacji i zatwierdzenia |
+| Zakres | Model danych, ziarna faktów, klucze i relacje, przepływ danych, słownik tabel i KPI, śledzenie wymagań |
+
+## 1. Cel i zakres dokumentacji
+
+Celem zadania jest opracowanie spójnej dokumentacji logicznego modelu danych HotelGroup, obejmującej:
+
+1. Diagram **ERD** przedstawiający tabele faktów i wymiarów, klucze i relacje.
+2. Jawne określenie **ziarna każdej tabeli faktów**.
+3. Diagram **data lineage** — pochodzenie danych, ich transformacje i drogę do raportów.
+4. **Słownik danych** — tabele, pola, typy logiczne, klucze oraz znaczenie atrybutów.
+5. **Słownik KPI** — definicje, wzory, źródła obliczeń i zasady obsługi wyjątków.
+6. Powiązanie elementów modelu z wymaganiami oraz sposobem ich weryfikacji.
+
+Dokument opisuje **projekt rozwiązania**. Nie należy traktować schematów logicznych, zaproponowanych pól ani diagramów jako potwierdzenia, że wszystkie tabele, zasilenia, miary i testy działają już w środowisku produkcyjnym. Struktury, które nie mają potwierdzonej implementacji, są oznaczone jako **PLANOWANE**. Zgodność struktur wdrożonych należy sprawdzić z aktualnymi skryptami DDL.
+
+### 1.1. Terminologia
+
+- **PK (Primary Key)** — klucz główny tabeli.
+- **FK (Foreign Key)** — klucz obcy odwołujący się do klucza innej tabeli.
+- **BK (Business Key)** — trwały identyfikator biznesowy obiektu.
+- **SK (Surrogate Key)** — techniczny klucz zastępczy nadawany w modelu analitycznym.
+- **Ziarno faktu** — jednoznaczna definicja tego, co reprezentuje jeden wiersz tabeli faktów.
+- **SCD2** — przechowywanie kolejnych wersji atrybutów wymiaru wraz z okresami ich obowiązywania.
+- **OOO (Out of Order)** — pokój czasowo wyłączony z użytkowania.
+
+## 2. Architektura i źródła danych
+
+Docelowym środowiskiem składowania danych jest **PostgreSQL**, z trzema schematami:
+
+| Schemat | Rola | Podstawowe zasady |
+|---|---|---|
+| `staging` | Odbiór danych ze źródeł | Zachowanie wartości źródłowych, identyfikatorów i metadanych importu; bez wymuszania relacji między surowymi rekordami |
+| `core` | Walidacja i integracja | Deduplikacja, normalizacja dat, statusów i walut, mapowanie identyfikatorów, obsługa błędnych rekordów |
+| `mart` | Model analityczny | Fakty, wymiary, relacje i dane przygotowane do warstwy semantycznej oraz raportów Power BI |
+
+### 2.1. Źródła
+
+| System | Format | Zakres | Rola w przepływie |
+|---|---|---|---|
+| PMS | SQLite | Hotele, pokoje, rezerwacje, pobyty | Podstawa analizy rezerwacji, pokojonocy i dostępności |
+| Channel Manager | JSON | Kanały sprzedaży, prowizje | Uzupełnienie informacji o kanałach rezerwacji |
+| Finanse | CSV | Koszty i budżety | Porównania finansowe i plan–wykonanie |
+| POS | Do określenia | Gastronomia i SPA | **PLANOWANE rozszerzenie** analityki przychodów pozapokojowych |
+| CRM | Do określenia | Profile i lojalność gości | **PLANOWANE rozszerzenie** danych o gościach |
+
+Podstawowy model przewiduje dane syntetyczne obejmujące **co najmniej 24 miesiące i 50 000 rezerwacji**. Identyfikatory integracyjne muszą uwzględniać źródło oraz właściwy zakres unikalności, np. hotel lub instancję systemu.
+
+## 3. Projekt ERD — fakty i wymiary
+
+### 3.1. Wymiary
+
+| Wymiar logiczny | Ziarno | SK | BK |
+|---|---|---|---|
+| `DimDate` | Jeden dzień kalendarzowy | `DateKey` | `FullDate` |
+| `DimHotel` | Jeden hotel sieci | `HotelKey` | `HotelCode` |
+| `DimRoomType` | Jeden typ pokoju wspólny dla sieci | `RoomTypeKey` | `RoomTypeCode` |
+| `DimRoom` | Jeden fizyczny pokój w hotelu | `RoomKey` | `HotelCode + RoomCode` |
+| `DimChannel` | Jeden kanał sprzedaży | `ChannelKey` | `ChannelCode` |
+| `DimGuest` | Jeden profil gościa w wersji bazowej | `GuestKey` | `GuestBusinessId` |
+| `DimSegment` | Jeden segment rezerwacji | `SegmentKey` | `SegmentCode` |
+
+Wymiar hotelu obejmuje hierarchię **hotel → miasto → region → kraj**. Pokój fizyczny i typ pokoju są odrębnymi obiektami. Wymiar `DimGuest` uwzględnia docelową potrzebę SCD2, ale historyzacja nie jest uznawana za wdrożoną na podstawie samego projektu.
+
+### 3.2. Relacje strukturalne wymiarów
+
+```mermaid
+erDiagram
+    DimHotel ||--o{ DimRoom : "HotelKey"
+    DimRoomType ||--o{ DimRoom : "CurrentRoomTypeKey"
+    DimHotel {
+        int HotelKey PK
+        string HotelCode UK
+        string HotelName
+        string CityCode
+        string RegionCode
+    }
+    DimRoomType {
+        int RoomTypeKey PK
+        string RoomTypeCode UK
+        string RoomTypeName
+    }
+    DimRoom {
+        int RoomKey PK
+        int HotelKey FK
+        int CurrentRoomTypeKey FK
+        string RoomCode
+        string RoomNumber
+    }
+```
+
+Relacja między `DimHotel` a `DimRoom` wskazuje właściciela pokoju. `CurrentRoomTypeKey` opisuje **bieżący** typ pokoju, natomiast typ przypisany do historycznej pokojonocy należy przechowywać w odpowiednim fakcie.
+
+### 3.3. Tabele faktów i ziarna
+
+| Fakt logiczny | Jeden wiersz oznacza | Klucz ziarna | Status |
+|---|---|---|---|
+| `FactReservation` | Jeden bieżący rekord rezerwacji | `ReservationId` z identyfikatorem zakresu źródła/hotelu | **PLANOWANE** |
+| `FactRoomNight` | Jeden fizyczny pokój podczas jednej nocy pobytu | `RoomKey + StayDateKey` | **PLANOWANE** |
+| `FactRoomInventory` | Jeden fizyczny pokój w jednej lokalnej dacie biznesowej | `RoomKey + InventoryDateKey` | **PLANOWANE** |
+| `FactFinanceMonthly` | Hotel × miesiąc × kategoria finansowa × scenariusz (actual/budget) | Wspólny identyfikator hotelu, miesiąca, kategorii i scenariusza | **PLANOWANE** |
+| `FactAncillaryRevenue` | Jedna pozycja transakcji usługi pozapokojowej | Identyfikator transakcji i pozycji w zakresie źródła | **PLANOWANE** |
+
+**Przykład ziarna:** rezerwacja dwóch fizycznych pokoi na trzy noce jest jednym rekordem `FactReservation` oraz sześcioma pokojonocami `FactRoomNight`, po potwierdzeniu przydziału pokoi. Przychodu całej rezerwacji nie należy kopiować na każdą noc bez zdefiniowanej reguły alokacji.
+
+### 3.4. ERD głównych faktów i wspólnych wymiarów
+
+```mermaid
+erDiagram
+    DimDate ||--o{ FactReservation : "daty rezerwacji"
+    DimHotel ||--o{ FactReservation : "HotelKey"
+    DimChannel ||--o{ FactReservation : "ChannelKey"
+    DimGuest ||--o{ FactReservation : "PrimaryGuestKey"
+    DimSegment ||--o{ FactReservation : "SegmentKey"
+
+    DimDate ||--o{ FactRoomNight : "StayDateKey"
+    DimHotel ||--o{ FactRoomNight : "HotelKey"
+    DimRoom ||--o{ FactRoomNight : "RoomKey"
+    DimRoomType ||--o{ FactRoomNight : "typ zamowiony i zajety"
+    DimChannel ||--o{ FactRoomNight : "ChannelKey"
+    DimGuest ||--o{ FactRoomNight : "PrimaryGuestKey"
+    DimSegment ||--o{ FactRoomNight : "SegmentKey"
+
+    DimDate ||--o{ FactRoomInventory : "InventoryDateKey"
+    DimHotel ||--o{ FactRoomInventory : "HotelKey"
+    DimRoom ||--o{ FactRoomInventory : "RoomKey"
+    DimRoomType ||--o{ FactRoomInventory : "RoomTypeKey"
+
+    DimDate {
+        int DateKey PK
+        date FullDate UK
+    }
+    DimHotel {
+        int HotelKey PK
+        string HotelCode UK
+    }
+    DimRoom {
+        int RoomKey PK
+        int HotelKey FK
+    }
+    DimRoomType {
+        int RoomTypeKey PK
+    }
+    DimChannel {
+        int ChannelKey PK
+    }
+    DimGuest {
+        int GuestKey PK
+    }
+    DimSegment {
+        int SegmentKey PK
+    }
+    FactReservation {
+        string ReservationId "klucz biznesowy"
+        int BookingDateKey FK
+        int ArrivalDateKey FK
+        int DepartureDateKey FK
+        int CancellationDateKey FK
+        int HotelKey FK
+        int ChannelKey FK
+        string ReservationStatus
+    }
+    FactRoomNight {
+        int RoomKey FK
+        int StayDateKey FK
+        int HotelKey FK
+        int BookedRoomTypeKey FK
+        int OccupiedRoomTypeKey FK
+        decimal RoomRevenue
+    }
+    FactRoomInventory {
+        int RoomKey FK
+        int InventoryDateKey FK
+        int HotelKey FK
+        int RoomTypeKey FK
+        boolean IsOutOfOrder
+        int AvailableRoomNights
+    }
+```
+
+Diagram pokazuje **relacje logiczne**; wymiar daty pełni wiele ról (data utworzenia, przyjazdu, wyjazdu, anulacji). W docelowym modelu BI trzeba zapobiec niejednoznacznym ścieżkom filtrowania oraz rozróżnić rolę dat i typów pokojów. Dodatkowe pola `PrimaryGuestKey` i `SegmentKey` w nagłówku rezerwacji pozostają projektowymi rozszerzeniami do zatwierdzenia.
+
+### 3.5. Macierz kluczy obcych
+
+Każda relacja ma krotność **N:1** od wiersza podrzędnego do wiersza wymiaru. Macierz jest projektową listą powiązań do odwzorowania w ERD i weryfikacji z docelowymi strukturami SQL.
+
+| Tabela podrzędna | Kolumna FK | Wymiar nadrzędny | Kolumna PK | Krotność | Znaczenie / rola | Reguła |
+| --- | --- | --- | --- | --- | --- | --- |
+| DimRoom | HotelKey | DimHotel | HotelKey | N:1 | Własność fizycznego pokoju | Zgodność HotelKey faktu z hotelem pokoju; relacja strukturalna, nie druga aktywna ścieżka filtrowania w BI. |
+| DimRoom | CurrentRoomTypeKey | DimRoomType | RoomTypeKey | N:1 | Bieżący typ pokoju | Nie stosować do odtwarzania typu historycznego faktu. |
+| FactReservation | BookingDateKey | DimDate | DateKey | N:1 | Data utworzenia | Dokładnie jeden rekord wymiaru na FK, w tym rekord specjalny. |
+| FactReservation | ArrivalDateKey | DimDate | DateKey | N:1 | Planowany przyjazd | Dokładnie jeden rekord wymiaru na FK, w tym rekord specjalny. |
+| FactReservation | DepartureDateKey | DimDate | DateKey | N:1 | Planowany wyjazd | Dokładnie jeden rekord wymiaru na FK, w tym rekord specjalny. |
+| FactReservation | CancellationDateKey | DimDate | DateKey | N:1 | Data anulowania; -1 dla nieanulowanej | Dokładnie jeden rekord wymiaru na FK, w tym rekord specjalny. |
+| FactReservation | HotelKey | DimHotel | HotelKey | N:1 | Hotel rezerwacji | Dokładnie jeden rekord wymiaru na FK, w tym rekord specjalny. |
+| FactReservation | ChannelKey | DimChannel | ChannelKey | N:1 | Kanał rezerwacji | Dokładnie jeden rekord wymiaru na FK, w tym rekord specjalny. |
+| FactReservation | PrimaryGuestKey | DimGuest | GuestKey | N:1 | Gość główny; nie lista wszystkich gości | Pole projektowe; jedna wartość na nagłówek rezerwacji, do zatwierdzenia. |
+| FactReservation | SegmentKey | DimSegment | SegmentKey | N:1 | Segment tej rezerwacji | Pole projektowe; jedna wartość na nagłówek rezerwacji, do zatwierdzenia. |
+| FactRoomNight | StayDateKey | DimDate | DateKey | N:1 | Noc pobytu; dzień wyjazdu wyłączony | Dokładnie jeden rekord wymiaru na FK, w tym rekord specjalny. |
+| FactRoomNight | HotelKey | DimHotel | HotelKey | N:1 | Hotel pobytu | Dokładnie jeden rekord wymiaru na FK, w tym rekord specjalny. |
+| FactRoomNight | RoomKey | DimRoom | RoomKey | N:1 | Fizyczny pokój przypisany do nocy | RoomKey > 0 dla faktu o ziarnie pokój × noc. Nie scalać nieprzydzielonych rezerwacji pod RoomKey=-2. |
+| FactRoomNight | BookedRoomTypeKey | DimRoomType | RoomTypeKey | N:1 | Typ zamówiony | Dokładnie jeden rekord wymiaru na FK, w tym rekord specjalny. |
+| FactRoomNight | OccupiedRoomTypeKey | DimRoomType | RoomTypeKey | N:1 | Typ fizycznego pokoju obowiązujący w nocy pobytu | Dokładnie jeden rekord wymiaru na FK, w tym rekord specjalny. |
+| FactRoomNight | ChannelKey | DimChannel | ChannelKey | N:1 | Kanał przypisany do rezerwacji | Dokładnie jeden rekord wymiaru na FK, w tym rekord specjalny. |
+| FactRoomNight | PrimaryGuestKey | DimGuest | GuestKey | N:1 | Gość główny pobytu | Dokładnie jeden rekord wymiaru na FK, w tym rekord specjalny. |
+| FactRoomNight | SegmentKey | DimSegment | SegmentKey | N:1 | Segment rezerwacji obowiązujący dla tej pozycji | Dokładnie jeden rekord wymiaru na FK, w tym rekord specjalny. |
+| FactRoomInventory | InventoryDateKey | DimDate | DateKey | N:1 | Data dostępności | Dokładnie jeden rekord wymiaru na FK, w tym rekord specjalny. |
+| FactRoomInventory | HotelKey | DimHotel | HotelKey | N:1 | Hotel zasobu | Dokładnie jeden rekord wymiaru na FK, w tym rekord specjalny. |
+| FactRoomInventory | RoomKey | DimRoom | RoomKey | N:1 | Fizyczny pokój | Dokładnie jeden rekord wymiaru na FK, w tym rekord specjalny. |
+| FactRoomInventory | RoomTypeKey | DimRoomType | RoomTypeKey | N:1 | Typ zasobu obowiązujący w tej dacie | Dokładnie jeden rekord wymiaru na FK, w tym rekord specjalny. |
+| FactFinanceMonthly | MonthDateKey | DimDate | DateKey | N:1 | Pierwszy dzień miesiąca; nie data dowolnej transakcji | Dokładnie jeden rekord wymiaru na FK, w tym rekord specjalny. |
+| FactFinanceMonthly | HotelKey | DimHotel | HotelKey | N:1 | Hotel wyniku finansowego | Dokładnie jeden rekord wymiaru na FK, w tym rekord specjalny. |
+| FactAncillaryRevenue | SaleDateKey | DimDate | DateKey | N:1 | Lokalna data sprzedaży | Dokładnie jeden rekord wymiaru na FK, w tym rekord specjalny. |
+| FactAncillaryRevenue | HotelKey | DimHotel | HotelKey | N:1 | Hotel sprzedaży | Dokładnie jeden rekord wymiaru na FK, w tym rekord specjalny. |
+| FactAncillaryRevenue | RoomKey | DimRoom | RoomKey | N:1 | Tylko jeśli transakcja ma powiązanie; inaczej -1 | Dokładnie jeden rekord wymiaru na FK, w tym rekord specjalny. |
+| FactAncillaryRevenue | GuestKey | DimGuest | GuestKey | N:1 | Tylko jeśli transakcja ma powiązanie; inaczej -1 | Dokładnie jeden rekord wymiaru na FK, w tym rekord specjalny. |
+
+
+### 3.6. Reguły integralności i przypadki graniczne
+
+1. Unikalność pokoju fizycznego musi uwzględniać hotel: `(HotelKey, RoomCode)`. Pokój 101 w dwóch hotelach to dwa różne pokoje.
+2. **Data wyjazdu nie jest nocą pobytu.** Pobyt od 31 stycznia do 2 lutego obejmuje noce 31 stycznia i 1 lutego.
+3. W `FactRoomNight` nie wolno utworzyć dwóch „sprzedanych fizycznych pokojonocy” dla tego samego pokoju i dnia; konflikt oznacza sytuację wymagającą wyjaśnienia.
+4. Przyszłe rezerwacje bez przydzielonego pokoju nie mogą być zapisane jako wiele fizycznych pokojonocy jednego sztucznego pokoju. Planowaną dostępność należy rozwiązać niezależnie od faktu ziarna fizycznego.
+5. `FactRoomInventory` przechowuje dostępność również dla niesprzedanych dni i wyłączeń OOO. Nie zawiera sztucznie przypisanego kanału czy segmentu.
+6. Segment jest przypisany do rezerwacji, a nie trwale do gościa; nie należy wywodzić go automatycznie z kanału sprzedaży.
+7. Rekordy specjalne w wymiarach: `0` = `UNKNOWN`, `-1` = `NOT_APPLICABLE`; dla `DimRoom` wartość `-2` oznacza `UNASSIGNED`. Nie używać specjalnego pokoju jako potwierdzonej fizycznej pokojonocy.
+8. `DimDate.DateKey` jest niezależnym kluczem typu INTEGER, bez założenia, że ma postać `YYYYMMDD`.
+9. Dla danych gościa należy stosować pseudonimowy identyfikator biznesowy; bezpośrednie dane identyfikujące gościa nie powinny być ujawniane w raportach.
+10. Historię zmian poziomu lojalności należy docelowo przechowywać jako SCD2 z niepokrywającymi się przedziałami ważności wersji.
+
+### 3.7. Konwencje nazewnictwa
+
+W opisie logicznym stosuje się nazwy w rodzaju `DimHotel`, `FactReservation`, `HotelKey`. W fizycznym schemacie PostgreSQL przyjmuje się konwencję **`snake_case`**, np. `mart.dim_hotel` i `mart.fact_reservation`, oraz odrębne identyfikatory biznesowe i zastępcze (`_bk`, `_sk`). Przykładowe odwzorowania:
+
+| Nazwa logiczna | Nazwa fizyczna (projektowa) | Uwagi |
+|---|---|---|
+| `DimHotel` | `mart.dim_hotel` | Nazwa tabeli |
+| `DimHotel.HotelKey` | `hotel_sk` | PK / SK |
+| `DimHotel.HotelCode` | `hotel_bk` | BK |
+| `DimDate` | `mart.dim_date` | Wymiar kalendarza |
+| `DimRoom` | `mart.dim_room` | Pokój fizyczny |
+| `FactReservation` | `mart.fact_reservation` | Fakt rezerwacji |
+| `FactRoomNight` | `mart.fact_room_night` | Fakt pokojonocy |
+| `FactRoomInventory` | `mart.fact_room_inventory` | Fakt dziennej dostępności |
+
+Odzwierciedlenie nazw, typów, kluczy i ograniczeń w rzeczywistych skryptach DDL stanowi odrębny punkt weryfikacji dokumentacji. Nie wolno uznawać nazw projektowych za wdrożone bez sprawdzenia definicji SQL.
+
+## 4. Data lineage — przepływ danych
+
+### 4.1. Diagram źródło → raport
+
+```mermaid
+flowchart LR
+    subgraph SRC["Źródła danych"]
+        PMS["PMS / SQLite"]
+        CM["Channel Manager / JSON"]
+        FIN["Finanse / CSV"]
+        POS["POS / F&B i SPA - plan"]
+        CRM["CRM / goście - plan"]
+    end
+    subgraph ETL["Python i SQL"]
+        EX["Pobieranie danych i metadane importu"]
+        VALID["Walidacja, deduplikacja i mapowanie"]
+        ERR["Rejestr odrzuconych rekordów"]
+    end
+    subgraph DB["PostgreSQL: hotelgroup_dw"]
+        ST["staging / dane surowe"]
+        CORE["core / dane uzgodnione"]
+        MART["mart / fakty i wymiary"]
+    end
+    subgraph BI["Power BI"]
+        SEM["Model semantyczny i KPI"]
+        RAP["Dashboard zarządczy i raport operacyjny"]
+    end
+    PMS --> EX
+    CM --> EX
+    FIN --> EX
+    POS -.-> EX
+    CRM -.-> EX
+    EX --> ST
+    ST --> VALID
+    VALID --> CORE
+    VALID --> ERR
+    CORE --> MART
+    MART --> SEM
+    SEM --> RAP
+```
+
+Linia ciągła oznacza **docelowy główny przepływ projektowy**, a przerywana — **planowane rozszerzenie źródeł**. Sam diagram nie oznacza, że wszystkie strzałki odpowiadają uruchomionym procesom.
+
+### 4.2. Mapowanie źródeł na model i raporty
+
+| Dane źródłowe | Planowana transformacja | Obiekt docelowy | Wykorzystanie w raportach |
+|---|---|---|---|
+| PMS: hotele i lokalizacje | Mapowanie identyfikatorów hoteli, miasta i regionu | `DimHotel` | Porównanie hoteli i regionów |
+| PMS: pokoje i typy | Mapowanie lokalnego pokoju do stałego identyfikatora hotelu i pokoju | `DimRoom`, `DimRoomType` | Filtry typu pokoju i dostępności |
+| PMS: rezerwacje | Normalizacja statusów i dat, usunięcie duplikatów | `FactReservation`, `DimDate` | Liczba rezerwacji, Cancellation Rate |
+| PMS: pobyty i przydziały | Rozpisanie pobytu na noce bez daty wymeldowania | `FactRoomNight` | OCC, ADR, RevPAR |
+| PMS: zasób i wyłączenia pokoi | Ustalenie dostępności pokoju w każdej lokalnej dacie | `FactRoomInventory` | Dostępne pokojonoce dla OCC i RevPAR |
+| Channel Manager: kanały | Mapowanie kanału do wspólnego kodu | `DimChannel` | Channel mix i porównanie kanałów |
+| Finanse: koszty i budżety | Mapowanie hotelu, miesiąca, kategorii i scenariusza | `FactFinanceMonthly` | Budżet vs wykonanie, rentowność |
+| POS: gastronomia i SPA | Mapowanie hotelu, daty i kategorii usługi | `FactAncillaryRevenue` | Przychody pozapokojowe, TRevPAR — **PLANOWANE** |
+| CRM: lojalność | Pseudonimizacja i identyfikacja zmian profilu | `DimGuest` z SCD2 | Goście powracający i lojalność — **PLANOWANE** |
+
+Mapowanie zawiera **logiczne nazwy danych i reguł**. Kolumny źródłowe oraz sposób przetwarzania wymagają potwierdzenia w implementacji.
+
+### 4.3. Operacje i reguły jakości
+
+1. **Ekstrakcja:** odczyt SQLite, JSON i CSV z identyfikatorem procesu, źródłem, czasem oraz licznikami rekordów.
+2. **Staging:** zapis możliwie surowych danych i identyfikatorów umożliwiających odtworzenie procesu.
+3. **Walidacja:** wykrywanie duplikatów, pustych kluczy, błędnych dat, walut, statusów i niespójnych powiązań.
+4. **Core:** ujednolicenie wartości i mapowanie identyfikatorów między systemami, kontrola jakości oraz odrzucenia z powodem.
+5. **Mart:** budowa faktów i wymiarów zgodnych z określonym ziarnem, spójne klucze zastępcze i biznesowe.
+6. **Raportowanie:** obliczenia KPI w tej samej semantyce dla hoteli i okresów, kontrola dostępności informacji.
+7. **Kontrola finansowa:** porównanie sum przychodów z odpowiednimi źródłami z tolerancją maksymalnie 0,1% (NFR-02).
+
+W docelowym procesie powinny być uwzględnione **minimum 10 reguł jakości danych** uruchamianych podczas ładowania (R-07). Zasilanie przyrostowe wymaga identyfikowania rekordów nowych i zmienionych. Nie są to funkcje, których działanie potwierdza sam schemat przepływu.
+
+## 5. Słownik danych
+
+Wartości w kolumnie „Typ logiczny” określają **typy planowane**, a nie gwarantowany typ konkretnej kolumny PostgreSQL. Oznaczenie **Tak*** oznacza wymaganie dla standardowych rekordów, z wyjątkami dla rekordów specjalnych.
+
+### 5.1. Słownik wymiarów
+
+#### DimDate
+
+| Atrybut | Typ logiczny | Klucz | Wymagany | Znaczenie | Reguła |
+| --- | --- | --- | --- | --- | --- |
+| DateKey | INTEGER | PK / SK | Tak | Techniczny klucz daty | Nadawany centralnie; nie zawiera daty źródłowej; 0 = nieznana, -1 = nie dotyczy. |
+| FullDate | DATE | BK / UNIQUE | Tak* | Data kalendarzowa | Unikalna dla zwykłych rekordów; NULL tylko w rekordach specjalnych. |
+| CalendarYear | INTEGER | Atrybut | Tak* | Rok kalendarzowy | Wyznaczony z FullDate. |
+| QuarterNumber | INTEGER | Atrybut | Tak* | Kwartał | 1–4. |
+| MonthNumber | INTEGER | Atrybut | Tak* | Miesiąc | 1–12; sortowanie MonthName. |
+| MonthName | TEXT | Atrybut | Tak* | Polska nazwa miesiąca | Jednolity słownik językowy. |
+| DayOfMonth | INTEGER | Atrybut | Tak* | Dzień miesiąca | 1–31 zgodnie z datą. |
+| DayOfWeekNumber | INTEGER | Atrybut | Tak* | Numer dnia tygodnia | Poniedziałek = 1, niedziela = 7. |
+| DayOfWeekName | TEXT | Atrybut | Tak* | Polska nazwa dnia tygodnia | Sortowanie DayOfWeekNumber. |
+| ISOWeekNumber | INTEGER | Atrybut | Tak* | Tydzień ISO | 1–53; używać razem z ISOWeekYear. |
+| ISOWeekYear | INTEGER | Atrybut | Tak* | Rok tygodnia ISO | Może różnić się od CalendarYear na przełomie lat. |
+| MonthStartDate | DATE | Atrybut | Tak* | Pierwszy dzień miesiąca | Pozwala wskazać okres faktu miesięcznego. |
+| IsWeekend | BOOLEAN | Atrybut | Tak* | Czy sobota lub niedziela | Wynika z DayOfWeekNumber. |
+
+#### DimHotel
+
+| Atrybut | Typ logiczny | Klucz | Wymagany | Znaczenie | Reguła |
+| --- | --- | --- | --- | --- | --- |
+| HotelKey | INTEGER | PK / SK | Tak | Techniczny klucz hotelu | Stały przy zmianie nazwy hotelu. |
+| HotelCode | TEXT | BK / UNIQUE | Tak* | Stały kod hotelu w sieci | Nie kod nazwy miasta; różne źródłowe ID mapują się na ten sam HotelCode. |
+| HotelName | TEXT | Atrybut | Tak* | Nazwa hotelu | Nazwa nie jest kluczem. |
+| CityCode | TEXT | Atrybut | Tak* | Kod miasta w rejestrze sieci | Identyfikuje miasto w kraju, niezależnie od pisowni nazwy. |
+| CityName | TEXT | Atrybut | Tak* | Nazwa miasta | CityCode jednoznacznie określa CityName i RegionCode. |
+| RegionCode | TEXT | Atrybut | Tak* | Kod regionu w rejestrze sieci | Propozycja: jednostka administracyjna; definicja do zatwierdzenia. |
+| RegionName | TEXT | Atrybut | Tak* | Nazwa regionu | RegionCode jednoznacznie określa nazwę i kraj. |
+| CountryCode | TEXT | Atrybut | Tak* | Kod kraju hotelu | Jeden ustalony słownik kodów krajów. |
+| TimeZoneId | TEXT | Atrybut | Tak* | Strefa czasowa hotelu | Używana przy wyznaczaniu lokalnej daty biznesowej; identyfikator zgodny z wybraną platformą. |
+| HotelCategory | TEXT | Atrybut | Nie | Kategoria biznesowa hotelu | Np. CITY, RESORT, APARTHOTEL; słownik do uzgodnienia. |
+| IsActive | BOOLEAN | Atrybut | Tak* | Czy hotel jest aktywny | Zamknięcie nie usuwa historii ani nie zwalnia HotelCode do ponownego użycia. |
+
+#### DimRoomType
+
+| Atrybut | Typ logiczny | Klucz | Wymagany | Znaczenie | Reguła |
+| --- | --- | --- | --- | --- | --- |
+| RoomTypeKey | INTEGER | PK / SK | Tak | Techniczny klucz typu pokoju | Wspólny dla całej sieci. |
+| RoomTypeCode | TEXT | BK / UNIQUE | Tak* | Kod wspólnego typu | Proponowane kody: STANDARD, SUPERIOR, SUITE, APARTMENT, OTHER oraz kody techniczne; do uzgodnienia. |
+| RoomTypeName | TEXT | Atrybut | Tak* | Nazwa wspólnego typu | Jednakowe znaczenie we wszystkich hotelach. |
+| RoomTypeDescription | TEXT | Atrybut | Tak* | Kryteria zaliczenia do typu | Opis zatwierdzony przez biznes; nie samo dopasowanie podobnych nazw. |
+| IsActive | BOOLEAN | Atrybut | Tak* | Czy typ jest używany | Wycofany typ pozostaje dla historycznych faktów. |
+
+#### DimRoom
+
+| Atrybut | Typ logiczny | Klucz | Wymagany | Znaczenie | Reguła |
+| --- | --- | --- | --- | --- | --- |
+| RoomKey | INTEGER | PK / SK | Tak | Techniczny klucz fizycznego pokoju | Nigdy nie wyliczać wyłącznie z numeru pokoju. |
+| HotelKey | INTEGER | FK → DimHotel.HotelKey | Tak | Hotel będący właścicielem pokoju | Każdy zwykły pokój ma dokładnie jeden hotel. |
+| RoomCode | TEXT | Składnik BK | Tak* | Stały identyfikator pokoju w hotelu | UNIQUE (HotelKey, RoomCode); RoomCode pozostaje stały po zmianie numeru wyświetlanego. |
+| RoomNumber | TEXT | Atrybut | Tak* | Numer lub oznaczenie pokoju | Np. 101, 01A; tekst zachowuje zera i litery. Nie musi być unikalny między hotelami. |
+| CurrentRoomTypeKey | INTEGER | FK → DimRoomType.RoomTypeKey | Tak | Bieżący typ fizycznego pokoju | Tylko opis bieżący; typ historyczny pobierany z faktu dla danej daty. |
+| FloorLabel | TEXT | Atrybut | Nie | Oznaczenie piętra | Tekst, np. 0, 1, antresola; potwierdzić dostępność. |
+| CapacityAdults | INTEGER | Atrybut | Nie | Bieżąca pojemność dorosłych | Nieujemna liczba; brak nie oznacza zera. |
+| CapacityChildren | INTEGER | Atrybut | Nie | Bieżąca pojemność dzieci | Nieujemna liczba; definicja wieku do uzgodnienia. |
+| IsActive | BOOLEAN | Atrybut | Tak* | Czy pokój należy do aktywnego zasobu | Nie jest statusem OOO dla konkretnego dnia. |
+
+#### DimChannel
+
+| Atrybut | Typ logiczny | Klucz | Wymagany | Znaczenie | Reguła |
+| --- | --- | --- | --- | --- | --- |
+| ChannelKey | INTEGER | PK / SK | Tak | Techniczny klucz kanału | Wspólny dla źródeł i hoteli. |
+| ChannelCode | TEXT | BK / UNIQUE | Tak* | Kod kanału sieci | Np. BOOKING_COM, DIRECT_WEB, DIRECT_PHONE. |
+| ChannelName | TEXT | Atrybut | Tak* | Nazwa kanału | Jedna nazwa biznesowa po normalizacji kodów. |
+| ChannelGroupCode | TEXT | Atrybut | Tak* | Grupa dystrybucji | Proponowane grupy: DIRECT, OTA, AGENCY, GDS, OTHER; grupa wyznaczana przez ChannelCode; techniczne UNKNOWN/NOT_APPLICABLE. |
+| IsActive | BOOLEAN | Atrybut | Tak* | Czy kanał jest wykorzystywany | Prowizja transakcji nie jest stałą cechą kanału. |
+
+#### DimGuest
+
+| Atrybut | Typ logiczny | Klucz | Wymagany | Znaczenie | Reguła |
+| --- | --- | --- | --- | --- | --- |
+| GuestKey | INTEGER | PK / SK | Tak | Techniczny klucz rekordu gościa | Docelowo klucz wersji po włączeniu SCD2. |
+| GuestBusinessId | TEXT | BK | Tak* | Trwały pseudonim profilu biznesowego | W bazie logicznej bez historii jeden rekord na ID; docelowo jedno ID może mieć wiele wersji SCD2. |
+| GuestCountryCode | TEXT | Atrybut | Nie | Kraj zamieszkania gościa | Proponowana jedna definicja: kraj zamieszkania, nie obywatelstwo; do uzgodnienia. |
+| LoyaltyLevelCode | TEXT | Atrybut | Nie | Poziom programu lojalnościowego | Kandydat do historyzacji; brak profilu nie oznacza braku członkostwa. |
+| IsActive | BOOLEAN | Atrybut | Tak* | Czy profil pozostaje aktywny | Nie zastępuje obsługi usunięcia danych ani reguł retencji. |
+
+#### DimSegment
+
+| Atrybut | Typ logiczny | Klucz | Wymagany | Znaczenie | Reguła |
+| --- | --- | --- | --- | --- | --- |
+| SegmentKey | INTEGER | PK / SK | Tak | Techniczny klucz segmentu | Przechowywany w fakcie rezerwacji / pokojonocy. |
+| SegmentCode | TEXT | BK / UNIQUE | Tak* | Kod segmentu rynkowego | Proponowane grupy: GROUP, BUSINESS, LEISURE, OTHER; reguła pierwszeństwa grupy; techniczne UNKNOWN/NOT_APPLICABLE. |
+| SegmentName | TEXT | Atrybut | Tak* | Nazwa segmentu | Spójna dla sieci. |
+| SegmentDescription | TEXT | Atrybut | Tak* | Reguła klasyfikacji rezerwacji | Nie wyprowadzać segmentu wyłącznie z kanału lub aktualnej cechy gościa. |
+| IsActive | BOOLEAN | Atrybut | Tak* | Czy segment jest używany | Wycofanie nie usuwa historycznych przypisań. |
+
+
+### 5.2. Słownik najważniejszych pól tabel faktów
+
+| Obiekt.pole logiczne | Typ logiczny | Klucz | Znaczenie / zasada |
+|---|---|---|---|
+| `FactReservation.ReservationId` | TEXT | BK z zakresem instancji/hotelu | ID nagłówka rezerwacji; jeden rekord nawet przy wielu pokojach. |
+| `FactReservation.BookingDateKey` | INTEGER | FK → DimDate | Data utworzenia rezerwacji. |
+| `FactReservation.ArrivalDateKey` / `DepartureDateKey` | INTEGER | FK → DimDate | Planowany okres; dzień wyjazdu nie jest nocą pobytu. |
+| `FactReservation.CancellationDateKey` | INTEGER | FK → DimDate | Data anulowania, rekord specjalny -1 dla nieanulowanej. |
+| `FactReservation.HotelKey` | INTEGER | FK → DimHotel | Hotel rezerwacji. |
+| `FactReservation.ChannelKey` | INTEGER | FK → DimChannel | Kanał pozyskania. |
+| `FactReservation.ReservationStatus` | TEXT | — | Status aktywna/anulowana/no-show według uzgodnionej normalizacji. |
+| `FactReservation.PrimaryGuestKey` / `SegmentKey` | INTEGER | FK | Pola opcjonalne w modelu logicznym; wymagają potwierdzenia. |
+| `FactRoomNight.RoomKey` | INTEGER | składnik ziarna / FK | Konkretny pokój fizyczny; nie stosować -2 do wykonanych pokojonocy. |
+| `FactRoomNight.StayDateKey` | INTEGER | składnik ziarna / FK | Lokalna data nocy pobytu. |
+| `FactRoomNight.HotelKey` | INTEGER | FK → DimHotel | Hotel zgodny z fizycznym pokojem. |
+| `FactRoomNight.BookedRoomTypeKey` | INTEGER | FK → DimRoomType | Typ zamówiony w danej pozycji rezerwacji. |
+| `FactRoomNight.OccupiedRoomTypeKey` | INTEGER | FK → DimRoomType | Typ zajęty w danej nocy (upgrade możliwy). |
+| `FactRoomNight.RoomRevenue` | DECIMAL | miara | Przychód pokojowy przypisany do tej nocy; alokacja do zatwierdzenia. |
+| `FactRoomInventory.RoomKey` | INTEGER | składnik ziarna / FK | Fizyczny pokój. |
+| `FactRoomInventory.InventoryDateKey` | INTEGER | składnik ziarna / FK | Data dostępności lokalnej. |
+| `FactRoomInventory.RoomTypeKey` | INTEGER | FK → DimRoomType | Typ pokoju obowiązujący dla tej daty. |
+| `FactRoomInventory.IsOutOfOrder` | BOOLEAN | — | Stan OOO na konkretny dzień, nie cecha stała pokoju. |
+| `FactRoomInventory.AvailableRoomNights` | INTEGER | miara | 0/1 według polityki OOO potwierdzonej przez PO. |
+| `FactFinanceMonthly.MonthDateKey` | INTEGER | FK → DimDate | Pierwszy dzień miesiąca; kwot miesięcznych nie rozdzielać bez uzgodnienia. |
+| `FactAncillaryRevenue.SaleDateKey` | INTEGER | FK → DimDate | Lokalna data transakcji POS. |
+
+Słownik określa **projektowane pola kluczowe**, a nie kompletną definicję fizycznej bazy danych. Przed wdrożeniem należy zweryfikować typy, nazwy i ograniczenia integralności.
+
+
+## 6. Słownik podstawowych KPI
+
+Wartości są obliczane dla **tego samego zestawu filtrów biznesowych**. Agregacja wielu hoteli lub okresów następuje przez sumowanie właściwych liczników i mianowników, a nie przez uśrednianie gotowych procentów lub średnich cen.
+
+### 6.1. OCC — Occupancy
+
+**Definicja:** udział sprzedanych pokojonocy w pokojonocach dostępnych.
+
+`OCC (%) = 100 × SUM(sprzedane_pokojonoce) / SUM(dostępne_pokojonoce)`
+
+- **Dane:** `FactRoomNight` i `FactRoomInventory`.
+- **Przypadki graniczne:** zero dostępności → „Brak danych”; pobyt przechodzący między miesiącami jest rozdzielany na właściwe noce.
+- **Do zatwierdzenia:** reguły uwzględniania OOO, no-show, overbookingu i statusów sprzedanych pokojonocy.
+- **Przykład kontrolny:** 750 / 1000 = **75%**.
+
+### 6.2. ADR — Average Daily Rate
+
+**Definicja:** przychód z pokoi na sprzedaną pokojonoc.
+
+`ADR = SUM(przychód_z_pokoi) / SUM(sprzedane_pokojonoce)`
+
+- **Dane:** przychód przypisany do sprzedanych nocy w `FactRoomNight`.
+- **Zakres:** wyłącznie sprzedaż pokoi, bez F&B i SPA.
+- **Przypadek graniczny:** zero sprzedanych pokojonocy → „Brak danych”.
+- **Do zatwierdzenia:** kwoty netto/brutto, rabaty, podatki i przypisanie przychodu do noclegów.
+- **Przykład kontrolny:** 150 000 PLN / 500 = **300,00 PLN**.
+
+### 6.3. RevPAR — Revenue per Available Room
+
+**Definicja:** przychód z pokoi na dostępną pokojonoc.
+
+`RevPAR = SUM(przychód_z_pokoi) / SUM(dostępne_pokojonoce)`
+
+- **Dane:** `FactRoomNight` i `FactRoomInventory`.
+- **Kontrola zgodności:** dla zgodnego zakresu `RevPAR = (OCC / 100) × ADR` przed zaokrągleniem.
+- **Przypadek graniczny:** zero dostępnych pokojonocy → „Brak danych”.
+- **Przykład kontrolny:** 150 000 PLN / 1000 = **150,00 PLN**.
+
+### 6.4. Cancellation Rate
+
+**Definicja:** odsetek anulowanych rezerwacji w określonej kohorcie rezerwacji.
+
+`Cancellation Rate (%) = 100 × liczba_anulowanych_rezerwacji / liczba_wszystkich_rezerwacji_w_kohorcie`
+
+- **Dane:** `FactReservation`, z unikaniem wielokrotnego liczenia identyfikatorów rezerwacji.
+- **Reguła:** no-show nie jest anulacją.
+- **Przypadek graniczny:** brak rezerwacji w kohorcie → „Brak danych”.
+- **Do zatwierdzenia:** wybór kohorty (np. data utworzenia lub przyjazdu) i jej jednolite stosowanie w liczniku i mianowniku.
+- **Przykład kontrolny:** 40 / 200 = **20%**.
+
+### 6.5. Wskaźniki uzupełniające
+
+| Wskaźnik | Definicja projektowa | Zależność od modelu |
+|---|---|---|
+| TRevPAR | Przychód całkowity (pokoje + gastronomia + SPA) / dostępne pokojonoce | `FactAncillaryRevenue` + dane noclegowe |
+| GOP | Przychody operacyjne − koszty operacyjne | `FactFinanceMonthly` i uzgodniona klasyfikacja kosztów |
+| Marża GOP | GOP / przychody operacyjne | Dane finansowe |
+| Booking Lead Time | Liczba dni od utworzenia rezerwacji do przyjazdu | Daty rezerwacji i pobytu |
+| ALOS | Średnia długość pobytu w nocach | Daty pobytu lub pokojonoce |
+| Pickup / Booking Pace | Zmiany rezerwacji na przyszłe daty / tempo względem historii | Historia zdarzeń lub migawki rezerwacji |
+
+## 7. Śledzenie wymagań i weryfikacja
+
+| Wymaganie | Element modelu / rozwiązania | Raport lub zastosowanie | Sposób weryfikacji |
+|---|---|---|---|
+| R-01 — 3 różne źródła | PMS/SQLite, Channel Manager/JSON, finanse/CSV → `staging` | Wszystkie raporty | Kontrola trzech odrębnych źródeł i liczby pobranych rekordów |
+| R-02 — czyszczenie i walidacja | Transformacje `staging` → `core`, rejestr odrzuceń | Wiarygodne dane w raportach | Scenariusze duplikatów, braków, dat, walut i logu błędów |
+| R-03 — model wymiarowy | Siedem wymiarów, fakty o różnych ziarnach, planowane SCD2 | Model analityczny | Przegląd ERD, kluczy, DDL oraz dat obowiązywania wersji wymiaru |
+| R-04 — OCC, ADR, RevPAR, anulacje | `FactRoomNight`, `FactRoomInventory`, `FactReservation` | Dashboard KPI | Weryfikacja przykładów kontrolnych i agregacji po filtrach |
+| R-05 — dashboard sieci | Model semantyczny Power BI | Dashboard zarządczy | Porównanie KPI, danych YoY i budżetu |
+| R-06 — raport operacyjny | `DimHotel`, `DimDate`, `DimRoomType`, `DimSegment` | Raport pojedynczego hotelu | Test filtrów hotel/data/typ/segment |
+| R-07 — jakość danych | Reguły walidacji, log odrzuceń | Kontrola ładowania | Minimum 10 reguł uruchamianych w procesie |
+| R-08 — przyrostowość | Metadane ostatniego ładowania, identyfikacja zmian | Aktualność danych | Porównanie pełnego i przyrostowego ładowania |
+| R-10 — F&B i SPA | `FactAncillaryRevenue` | TRevPAR i analiza usług | Uzgodnienie przychodów pozapokojowych |
+| NFR-02 — zgodność kwot | Kontrola źródło ↔ hurtownia | Dane finansowe | Odchylenie przychodów nie większe niż 0,1% |
+| NFR-03 — ochrona danych | Pseudonimowy `DimGuest`, maskowanie | Wszystkie widoki z danymi gościa | Test braku bezpośrednich danych identyfikujących |
+| NFR-04 — wersjonowanie | SQL, Python, dokumentacja i model BI w Git | Utrzymanie rozwiązania | Przegląd historii zmian |
+| NFR-08 — słownik biznesowy | Niniejsze definicje i pola KPI | Dokumentacja użytkowników | Przegląd poprawności definicji i przykładów |
+
+Wskazane kontrole są **planem weryfikacji** — tabela nie oznacza ich przeprowadzenia ani zaliczenia.
+
+## 8. Elementy wymagające weryfikacji i decyzji
+
+| Obszar | Zakres weryfikacji |
+|---|---|
+| DDL | Sprawdzić nazwy fizyczne tabel, kolumn, typy, ograniczenia PK/FK i zgodność z ERD |
+| Źródła | Potwierdzić pola, zakres unikalności identyfikatorów oraz mapowanie między systemami |
+| Ziarnistość pokojonocy | Potwierdzić sposób obsługi zmian pokoju, overbookingu i rezerwacji bez przydziału |
+| Dostępność pokoi | Ustalić reguły OOO i warunki włączenia pokoju do mianownika OCC / RevPAR |
+| Rezerwacje i anulacje | Ustalić kwalifikujące statusy i kohortę Cancellation Rate |
+| Przychody | Uzgodnić alokację kwot między noce, walutę, podatki i rabaty |
+| Wymiar gościa | Zatwierdzić zakres pseudonimizacji oraz sposób prowadzenia historii SCD2 |
+| Nazewnictwo | Potwierdzić fizyczne odpowiedniki nazw logicznych i konwencję SK/BK |
+| Weryfikacja biznesowa | Uzgodnić definicje KPI i obsługę wyjątków z Product Ownerem |
+
+## 9. Checklista realizacji US-03-09
+
+| Element zadania | Stan dokumentacyjny | Warunek zamknięcia |
+|---|---|---|
+| Zebrać struktury faktów i wymiarów | Opracowano projekt | Potwierdzić kompletność listy tabel |
+| Przygotować ERD tabel, kluczy i relacji | Opracowano projekt | Przegląd diagramów |
+| Udokumentować ziarna faktów | Opracowano projekt | Potwierdzić reguły szczegółowości |
+| Sprawdzić zgodność ze skryptami DDL | Do weryfikacji | Zestawić planowane i zaimplementowane struktury |
+| Zidentyfikować źródła PMS, POS, CRM, Channel Manager i finanse | Ujęto w opisie | Zatwierdzić zakres bazowy i rozszerzenia |
+| Opracować diagram data lineage | Opracowano projekt | Sprawdzić ścieżki źródło → model → raport |
+| Udokumentować transformacje i mapowania | Opracowano projekt | Zweryfikować reguły wobec procesu przetwarzania |
+| Przygotować słownik danych | Opracowano projekt | Potwierdzić nazwy i typy logiczne |
+| Udokumentować OCC, ADR, RevPAR, Cancellation Rate | Opracowano projekt | Potwierdzić wzory i wyjątki |
+| Uzgodnić definicje KPI z Product Ownerem | Do zatwierdzenia | Zapisać decyzje i ewentualne korekty |
+| Powiązać wymagania z modelem, raportami i testami | Opracowano mapowanie | Zweryfikować aktualność powiązań |
+| Zapisać dokumentację w Git i sprawdzić aktualność | Do wykonania | Commit, Pull Request i przegląd zespołu |
+
+## 10. Zasady utrzymania dokumentacji
+
+1. Aktualizować ERD po każdej zmianie nazw, kluczy, relacji, liczby lub ziarna tabel.
+2. Aktualizować data lineage po zmianie źródeł, transformacji lub połączeń między strefami.
+3. Aktualizować słownik po zmianie kolumn, typów, kodów, reguł walidacyjnych i definicji KPI.
+4. Rozróżniać elementy **PLANOWANE**, **WDROŻONE** i **ZWERYFIKOWANE**; status wdrożenia nadawać na podstawie działającego rozwiązania.
+5. Zmiany dokumentacji wersjonować w Git i poddawać przeglądowi.
+6. Zachowywać zgodność definicji KPI w raporcie z dokumentacją biznesową.
+
+**Wynik zadania w Sprincie 1:** kompletna **wersja projektowa** ERD, data lineage i słownika danych/KPI. Weryfikacja odwzorowania w SQL, potwierdzenie szczegółowych reguł biznesowych oraz aktualizacje dokumentacji będą wykonywane wraz z rozwojem rozwiązania.
