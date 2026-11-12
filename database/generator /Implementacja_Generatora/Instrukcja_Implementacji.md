@@ -33,22 +33,22 @@ Po zakończeniu działania skryptu, należy upewnić się, że dane prawidłowo 
 * Otwórz narzędzie zapytań (Query Tool) dla tej bazy.
 * Wklej i uruchom poniższy kod SQL (klawisz F5), aby sprawdzić liczbę załadowanych rekordów. Powinna ona zgadzać się z logami wygenerowanymi przez skrypt Kacpra (m.in. 50 000+ rezerwacji i 20 000 gości).
 
-  -- 1. Zbiorcze sprawdzenie liczby wierszy we wszystkich załadowanych tabelach 
+  -- 1. Zbiorcze sprawdzenie liczby wierszy we wszystkich załadowanych tabelach
+  
   SELECT 'pms_hotels' AS tabela, COUNT(*) AS liczba_rekordow FROM staging.pms_hotels UNION ALL 
+  
   SELECT 'pms_guests', COUNT(*) FROM staging.pms_guests UNION ALL 
+  
   SELECT 'pms_rooms', COUNT(*) FROM staging.pms_rooms UNION ALL 
+  
   SELECT 'pms_reservations', COUNT(*) FROM staging.pms_reservations UNION ALL 
+  
   SELECT 'pms_stays', COUNT(*) FROM staging.pms_stays; 
 
 * Uruchom poniższe zapytanie, aby upewnić się, że struktura kolumn i wartości (np. kwoty i daty) załadowały się poprawnie i nie zawierają błędów kodowania:
 
   -- 2. Szybki podgląd 10 losowych rezerwacji wraz z datą ich załadowania (kolumna _inserted_at) 
-  SELECT  
-      reservation_id,  
-      hotel_id,  
-      status,  
-      room_revenue, 
-      _inserted_at  
-  FROM  
-      staging.pms_reservations  
+  
+  SELECT  reservation_id,  hotel_id,  status,  room_revenue, _inserted_at  
+  FROM  staging.pms_reservations  
   LIMIT 10;
