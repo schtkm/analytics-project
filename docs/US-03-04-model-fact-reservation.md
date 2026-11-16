@@ -25,6 +25,8 @@ Założenia:
 
 Powiązanie źródeł następuje za pomocą `reservation_id`.
 
+Wymienione tabele staging stanowią źródła pierwotne. Docelowe zasilenie mart.fct_reservations będzie wykorzystywało dane oczyszczone i uzgodnione w warstwie core, zgodnie z architekturą staging → core → mart. Dokładne tabele wejściowe core zostaną potwierdzone po realizacji zależnych prac ETL.
+
 ## 4. Analiza danych źródłowych
 
 ### 4.1. PMS – rezerwacje
@@ -61,11 +63,11 @@ Tabela `staging.cm_channels` zawiera informacje o kanałach pozyskania rezerwacj
 
 - Połączenie PMS i Channel Managera odbywa się przez `reservation_id`.
 - `channel_code` będzie podstawą powiązania rezerwacji z wymiarem `DimChannel`.
-- `commission_amount` może stanowić miarę finansową tabeli `FactReservation`.
+- `commission_amount` stanowi proponowaną miarę finansową tabeli `mart.fct_reservations`
 - `commission_rate` pozostaje atrybutem źródłowym; sposób jego wykorzystania w modelu wymaga uzgodnienia.
 - Zweryfikowano 140 875 rekordów Channel Managera, bez duplikatów identyfikatorów i bez brakujących powiązań z PMS.
 
-## 5. Projekt struktury tabeli FactReservation
+## 5. Projekt struktury tabeli mart.fct_reservations
 
 ### 5.1. Założenia modelu
 
@@ -192,7 +194,7 @@ Aktualny model źródłowy PMS nie udostępnia jednoznacznego pola `cancellation
 Przyjmuje się następujące założenia projektowe:
 
 - Nie należy utożsamiać `updated_at` z datą anulowania.
-- `cancellation_date_key` pozostaje opcjonalnym atrybutem logicznym do czasu uzgodnienia źródła danych.
+- Dla kolumny cancellation_date_sk przyjęto wartości techniczne UNKNOWN (0) i NOT_APPLICABLE (-1), zgodnie z regułami opisanymi w sekcji 13. Ich wykorzystanie wymaga przygotowania odpowiednich rekordów w mart.dim_date.
 - Nie wolno generować fikcyjnej daty anulowania na potrzeby raportowania rzeczywistych zdarzeń.
 - Jeśli data anulowania nie będzie dostępna, należy udokumentować ograniczenie analizy anulacji w czasie.
 
@@ -246,16 +248,16 @@ Dostępne pola źródłowe nie zawierają jawnego kodu waluty. W związku z tym:
 - Nie należy automatycznie utożsamiać `room_revenue - commission_amount` z zaksięgowanym przychodem netto.
 - Opłata za anulowanie jest przechowywana odrębnie od wartości rezerwacji, aby uniknąć podwójnego liczenia.
 
-### 8.4. Kwestie wymagające uzgodnienia
+### 8.4. Kwestie wymagające potwierdzenia
 
-Przed implementacją należy potwierdzić:
+Przed implementacją należy:
 
-1. Walutę bazową danych PMS i Channel Managera.
-2. Czy `room_revenue` oznacza wartość rezerwacji, czy faktycznie zrealizowany przychód.
-3. Sposób interpretacji kwot dla rezerwacji anulowanych i no-show.
-4. Czy `currency_code` będzie przechowywany bezpośrednio w tabeli faktów, czy za pomocą osobnego wymiaru waluty.
+1. Ustalić i udokumentować walutę bazową danych syntetycznych.
+2. Potwierdzić zgodność generatorów PMS i Channel Managera z regułami opisanymi w sekcjach 14.5 i 14.6.
+3. Potwierdzić przechowywanie `currency_code` bezpośrednio w `mart.fct_reservations`.
+4. Zweryfikować poprawność kwot podczas zasilania tabeli faktów.
 
-Do czasu uzgodnienia powyższych kwestii model finansowy pozostaje projektem logicznym.
+Interpretację `room_revenue`, `cancellation_fee` i `commission_amount` opisano w sekcji 14. Dane syntetyczne nie stanowią potwierdzonych zapisów księgowych.
 
 ## 9. Relacje FactReservation z wymiarami
 
@@ -285,7 +287,7 @@ Połączenie z wymiarami nie może zmieniać liczby unikalnych rezerwacji.
 - `hotel_id` jest identyfikatorem źródłowym, na podstawie którego wyszukiwany jest odpowiedni rekord `DimHotel`.
 - `channel_code` jest identyfikatorem źródłowym wykorzystywanym do przypisania `DimChannel`.
 - Daty źródłowe są mapowane na odpowiednie rekordy `DimDate`.
-- Jeżeli wymiary wykorzystują klucze zastępcze, tabela faktów powinna przechowywać te klucze zamiast identyfikatorów źródłowych.
+- Tabela faktów przechowuje klucze zastępcze (`*_sk`) odpowiednich wymiarów, a identyfikatory źródłowe służą do wyszukania właściwych rekordów wymiarowych.
 - Dla wymiarów przechowujących historię zmian należy zastosować zasady wyboru właściwej wersji rekordu uzgodnione z zespołem.
 
 ### 9.3. Obsługa brakujących powiązań
@@ -313,7 +315,7 @@ Sposób obsługi brakujących powiązań (odrzucenie rekordu, zastosowanie rekor
 
 Przed utworzeniem fizycznej tabeli `FactReservation` należy potwierdzić:
 
-1. Struktury oraz klucze `DimDate`, `DimHotel` i `DimChannel`.
+1. Struktury oraz klucze `DimDate`, `DimHotel`, `DimChannel`, `DimGuest` i `DimSegment`.
 2. Dostępność oczyszczonych danych PMS i Channel Managera.
 3. Uzgodnione reguły obsługi brakujących powiązań.
 4. Zgodność nazw i typów kluczy z modelem hurtowni.
@@ -341,7 +343,7 @@ Przed rozszerzeniem modelu należy zweryfikować to założenie z generatorem PM
 
 ### 10.3. Proponowany model pokojonocy
 
-W przypadku przyszłej obsługi rezerwacji wielopokojowych szczegółowość pobytów może zostać przedstawiona w osobnej tabeli faktów, np. `FactRoomNight`.
+Szczegółowość pobytów na poziomie pokojonocy została wydzielona do osobnego modelu faktów `FactRoomNight`, realizowanego w US-03-05. W ramach US-03-04 dokumentujemy wyłącznie zasady dekompozycji rezerwacji.
 
 **Proponowane ziarno:** jeden rekord na kombinację `reservation_id`, `room_id` i daty noclegu.
 
@@ -477,9 +479,9 @@ Kwoty należy przechowywać jako wartości dziesiętne, np. `NUMERIC(18,2)`.
 
 ### 14.4. Warunki zatwierdzenia
 
-Przed implementacją należy potwierdzić walutę danych syntetycznych oraz znaczenie `room_revenue` dla rezerwacji zakończonych, anulowanych i no-show.
+Przed implementacją należy potwierdzić walutę syntetycznych danych PMS i Channel Managera.
 
-Do tego czasu niniejsza sekcja określa zasady projektowe, a nie potwierdzone reguły księgowe.
+Reguły generowania i interpretacji kwot zostały opisane w sekcjach 14.5 i 14.6. Ich zgodność z kodem generatorów oraz poprawność odwzorowania w tabeli faktów zostaną zweryfikowane podczas implementacji i testów.
 
 ### 14.5. Weryfikacja reguł finansowych generatora PMS
 
@@ -527,22 +529,21 @@ Prowizja jest wyliczana na podstawie `room_revenue`. Dla rezerwacji anulowanych 
 Podczas implementacji należy porównać sumy `commission_amount` między źródłem Channel Managera a tabelą faktów oraz sprawdzić, czy połączenie źródeł nie powoduje powielania kwot.
 
 ## 15. Specyfikacja techniczna mart.fct_reservations
-
 ### 15.1. Proponowane typy danych
 
 | Kolumna | Proponowany typ PostgreSQL | Ograniczenia |
 |---|---|---|
-| `reservation_sk` | `BIGINT` | PRIMARY KEY |
+| `reservation_sk` | `INTEGER` (`SERIAL`) | PRIMARY KEY |
 | `reservation_bk` | `VARCHAR(50)` | NOT NULL, UNIQUE |
-| `hotel_sk` | `BIGINT` | FK → DimHotel |
-| `channel_sk` | `BIGINT` | FK → DimChannel |
-| `primary_guest_sk` | `BIGINT` | FK → DimGuest |
-| `segment_sk` | `BIGINT` | FK → DimSegment |
+| `hotel_sk` | `INTEGER` | FK → DimHotel |
+| `channel_sk` | `INTEGER` | FK → DimChannel |
+| `primary_guest_sk` | `INTEGER` | FK → DimGuest |
+| `segment_sk` | `INTEGER` | FK → DimSegment |
 | `booking_date_sk` | `INTEGER` | FK → DimDate |
 | `arrival_date_sk` | `INTEGER` | FK → DimDate |
 | `departure_date_sk` | `INTEGER` | FK → DimDate |
 | `cancellation_date_sk` | `INTEGER` | FK → DimDate |
-| `reservation_status` | `VARCHAR(20)` | NOT NULL |
+| `reservation_status` | `VARCHAR(50)` | NOT NULL |
 | `reservation_count` | `SMALLINT` | NOT NULL, DEFAULT 1 |
 | `cancellation_count` | `SMALLINT` | NOT NULL, DEFAULT 0 |
 | `room_revenue` | `NUMERIC(18,2)` | Kwota nieujemna |
@@ -550,7 +551,11 @@ Podczas implementacji należy porównać sumy `commission_amount` między źród
 | `commission_amount` | `NUMERIC(18,2)` | Kwota nieujemna |
 | `currency_code` | `CHAR(3)` | Kod waluty ISO 4217 |
 
-Podane typy są propozycją. Ostateczne typy kluczy obcych muszą być identyczne z typami kluczy głównych odpowiednich wymiarów w istniejącym schemacie SQL.
+Typy istniejących kolumn dostosowano do definicji zawartych w pliku `Skrypty_do_odtworzenia_bazy.sql`. Kolumna `reservation_sk` wykorzystuje mechanizm `SERIAL`, odpowiadający typowi `INTEGER` z automatycznym generowaniem wartości. Klucze obce mają typ `INTEGER`, zgodny z istniejącym modelem wymiarowym.
+
+Kolumny `reservation_count`, `cancellation_count`, `room_revenue`, `cancellation_fee`, `commission_amount` i `currency_code` stanowią proponowane rozszerzenie istniejącej tabeli `mart.fct_reservations`.
+
+Ostateczne ograniczenia, dopuszczalność wartości `NULL` oraz zgodność kluczy obcych z kluczami głównymi wymiarów zostaną zweryfikowane przed implementacją SQL.
 
 ### 15.2. Ograniczenia integralności
 
@@ -571,6 +576,8 @@ Reguły brakujących powiązań i dopuszczalność wartości NULL zostaną ostat
 Implementacja zostanie wykonana przez rozszerzenie istniejącej tabeli `mart.fct_reservations`, bez tworzenia równoległej tabeli faktów.
 
 Przed przygotowaniem migracji SQL należy zweryfikować typy istniejących kolumn, ograniczenia oraz zależności z pozostałymi elementami modelu hurtowni.
+
+Zależność od DimDate: obecna definicja mart.dim_date wymaga wartości full_date DATE UNIQUE NOT NULL, dlatego nie umożliwia bezpośredniego dodania dwóch rekordów technicznych bez rzeczywistej daty. Przed wykorzystaniem kluczy 0 (UNKNOWN) i -1 (NOT_APPLICABLE) należy uzgodnić z właścicielem wymiaru modyfikację tej definicji oraz przygotowanie odpowiednich rekordów technicznych. Nie należy stosować fikcyjnych dat kalendarzowych jako zastępstwa brakujących informacji.
 
 ## 16. Plan testów akceptacyjnych
 
