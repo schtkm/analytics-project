@@ -113,3 +113,37 @@ Tabela `staging.cm_channels` zawiera informacje o kanałach pozyskania rezerwacj
 - `cancellation_count = 1` wyłącznie dla rezerwacji sklasyfikowanych jako anulowane.
 - Status no-show nie oznacza automatycznie anulowania.
 - Łączenie danych PMS i Channel Managera nie może zwiększać liczby rezerwacji.
+
+## 6. Modelowanie statusów rezerwacji
+
+### 6.1. Mapowanie statusów źródłowych
+
+W tabeli `FactReservation` przechowywany będzie ujednolicony status rezerwacji, umożliwiający spójne raportowanie danych.
+
+| Status PMS | Status analityczny | Znaczenie |
+|---|---|---|
+| `Oczekująca` | `ACTIVE` | Rezerwacja oczekująca na realizację |
+| `W trakcie` | `IN_PROGRESS` | Pobyt w trakcie realizacji |
+| `Zakończona` | `COMPLETED` | Pobyt zakończony |
+| `Anulowana` | `CANCELLED` | Rezerwacja anulowana |
+| `No-Show` | `NO_SHOW` | Gość nie pojawił się w hotelu |
+
+### 6.2. Zasady liczenia rezerwacji i anulacji
+
+Dla każdej rezerwacji definiuje się następujące miary:
+
+| Miara | Reguła |
+|---|---|
+| `reservation_count` | Zawsze 1 |
+| `cancellation_count` | 1 dla `CANCELLED`, w pozostałych przypadkach 0 |
+
+Przykładowo rezerwacja o statusie `NO_SHOW` zwiększa liczbę rezerwacji, ale nie zwiększa liczby anulacji.
+
+### 6.3. Założenia
+
+- W tabeli faktów przechowywany jest ostatni znany status rezerwacji.
+- Statusy źródłowe są mapowane na jednoznaczne wartości analityczne.
+- `CANCELLED` i `NO_SHOW` stanowią odrębne kategorie.
+- Nieznany status źródłowy wymaga obsługi przez reguły jakości danych w procesie ETL.
+- Zmiana statusu nie powoduje dodania nowego rekordu do `FactReservation`.
+- Powyższe mapowanie jest propozycją do uzgodnienia z zespołem przed implementacją.
