@@ -2,7 +2,7 @@
 
 ## 1. Cel modelu
 
-Celem jest zaprojektowanie tabeli faktów `FactReservation`, umożliwiającej analizowanie rezerwacji i anulacji według hotelu, kanału rezerwacji i okresu.
+Celem jest zaprojektowanie tabeli faktów `mart.fct_reservations`, umożliwiającej analizowanie rezerwacji i anulacji według hotelu, kanału rezerwacji i okresu.
 
 Model powinien zapewniać jednoznaczne liczenie rezerwacji, bez wielokrotnego uwzględniania tego samego identyfikatora.
 
@@ -109,13 +109,13 @@ Nazwy kluczy zastępczych zachowują konwencję `_sk`. Identyfikator rezerwacji 
 
 ### 5.3. Atrybuty wymagające dodatkowych ustaleń
 
-**Data anulowania:** w dotychczasowej strukturze PMS nie ma osobnego pola daty anulowania. Nie należy zastępować go automatycznie przez `updated_at`. Konieczne jest uzgodnienie sposobu pozyskania daty lub udokumentowanie jej niedostępności.
+**Data anulowania:** w źródle PMS nie występuje osobne pole daty anulowania. Przyjęto stosowanie kluczy technicznych `UNKNOWN (0)` dla anulacji bez znanej daty oraz `NOT_APPLICABLE (-1)` dla pozostałych rezerwacji. Szczegółowe zasady opisano w sekcji 13. Wymaga to potwierdzenia istnienia odpowiednich rekordów w `DimDate`.
 
-**Waluta:** kolumny kwotowe PMS i Channel Managera nie zawierają kodu waluty. Przed implementacją należy ustalić walutę danych syntetycznych i sposób dokumentowania tego założenia.
+**Waluta:** dane PMS i Channel Managera nie zawierają kodu waluty. Przed implementacją należy ustalić walutę bazową i udokumentować ją zgodnie z zasadami opisanymi w sekcji 14.
 
-**Klucze wymiarów:** nazwy i typy kluczy należy dostosować do zatwierdzonych struktur `DimDate`, `DimHotel` i `DimChannel`.
+**Klucze wymiarów:** przyjęto powiązania z pięcioma wymiarami: `DimDate`, `DimHotel`, `DimChannel`, `DimGuest` i `DimSegment`. Stosujemy nazewnictwo kluczy zastępczych `*_sk`, zgodne z istniejącym modelem `mart.fct_reservations`. Przed implementacją należy potwierdzić ich typy i relacje.
 
-**Statusy:** przed implementacją należy uzgodnić mapowanie statusów źródłowych na wspólne kategorie analityczne.
+**Statusy:** przyjęto mapowanie pięciu statusów PMS na `ACTIVE`, `IN_PROGRESS`, `COMPLETED`, `CANCELLED` i `NO_SHOW`. Reguły opisano w sekcji 6 i wymagają one weryfikacji podczas Code Review.
 
 ### 5.4. Zasady zapobiegania podwójnemu liczeniu
 
@@ -367,7 +367,7 @@ W przykładzie `R001` jest wartością biznesowego identyfikatora rezerwacji (`r
 
 W ramach US-03-04 implementowana jest tabela `FactReservation` z ziarnem pojedynczej rezerwacji.
 
-`FactRoomNight` opisano jako koncepcję umożliwiającą przyszłe rozszerzenie modelu. Jej fizyczna implementacja nie jest częścią tego zadania, o ile nie zostanie odrębnie uzgodniona z zespołem.
+Tabela faktów pokojonocy (FactRoomNight) jest objęta osobną historią użytkownika US-03-05. W ramach US-03-04 dokumentujemy sposób zachowania ziarna rezerwacji i zasady zapobiegania podwójnemu liczeniu. Implementacja pokojonocy pozostaje w zakresie US-03-05.
 
 ## 11. Decyzja projektowa – zgodność z istniejącym modelem hurtowni
 
