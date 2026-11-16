@@ -382,3 +382,32 @@ Dane do tabeli faktów będą pochodzić z oczyszczonej warstwy `core`, zgodnie 
 **Przed implementacją fizyczną** należy potwierdzić zgodność struktur wymiarów, mapowania kanałów sprzedaży, walutę oraz dostępność danych o anulacjach.
 
 Niniejsza decyzja stanowi propozycję implementacyjną US-03-04 podlegającą Code Review zespołu. Zmiany istniejącego schematu SQL będą realizowane w ramach osobnego commita po weryfikacji zależności.
+
+## 12. Mapowanie kanałów sprzedaży
+
+### 12.1. Mapowanie kodów źródłowych
+
+Generator Channel Managera wykorzystuje trzy kody kanałów sprzedaży. Słownik wymiarów US-03-03 przewiduje bardziej szczegółową klasyfikację.
+
+Przyjęto następujące proponowane mapowanie:
+
+| Kod źródłowy | Kod docelowy DimChannel | Grupa |
+|---|---|---|
+| `DIRECT` | `DIRECT` | DIRECT |
+| `BOOKING` | `BOOKING_COM` | OTA |
+| `EXPEDIA` | `EXPEDIA` | OTA |
+
+Kod `DIRECT` zostanie dodany do słownika `DimChannel` jako ogólny kanał sprzedaży bezpośredniej. Nie będzie utożsamiany z `DIRECT_WEB`, `DIRECT_PHONE` ani `DIRECT_EMAIL`, ponieważ dane źródłowe nie pozwalają na takie rozróżnienie.
+
+### 12.2. Zasady mapowania
+
+- Każdej rezerwacji przypisuje się maksymalnie jeden kanał pozyskania.
+- Mapowanie powinno następować przed przypisaniem `channel_sk`.
+- Nieznany kod źródłowy należy zgłosić w kontroli jakości.
+- Brak kanału nie oznacza automatycznie rezerwacji bezpośredniej.
+- Mapowanie nie może zwiększać liczby rezerwacji.
+- Proponowane rozszerzenie słownika o `DIRECT` wymaga uwzględnienia w US-03-03 i przeglądu przez zespół.
+
+### 12.3. Weryfikacja
+
+Podczas implementacji należy sprawdzić, czy wszystkie kody źródłowe mają jednoznaczne odpowiedniki w `DimChannel` oraz czy każda rezerwacja otrzymuje dokładnie jeden właściwy klucz kanału.
