@@ -164,14 +164,18 @@ Przykładowo rezerwacja o statusie `NO_SHOW` zwiększa liczbę rezerwacji, ale n
 
 ### 7.1. Daty wykorzystywane w FactReservation
 
-Tabela faktów będzie przechowywać powiązania z wymiarem `DimDate` dla trzech podstawowych dat.
+Tabela `mart.fct_reservations` wykorzystuje cztery klucze dat zgodne z istniejącym modelem hurtowni.
 
 | Atrybut | Źródło | Znaczenie |
 |---|---|---|
-| `booking_date_key` | `booking_date` | Data utworzenia rezerwacji |
-| `check_in_date_key` | `check_in_date` | Planowana data zameldowania |
-| `check_out_date_key` | `check_out_date` | Planowana data wymeldowania |
-| `cancellation_date_key` | Do ustalenia | Data anulowania rezerwacji, jeśli jest dostępna |
+| `booking_date_sk` | `booking_date` | Data dokonania rezerwacji |
+| `arrival_date_sk` | `check_in_date` | Planowana data zameldowania |
+| `departure_date_sk` | `check_out_date` | Planowana data wymeldowania |
+| `cancellation_date_sk` | Brak jednoznacznego pola w PMS | Data anulowania, jeśli jest dostępna |
+
+Wszystkie klucze wskazują na wymiar `DimDate`, pełniący różne role analityczne.
+
+Data anulowania pozostaje niedostępna w obecnym źródle PMS. Nie należy zastępować jej polem `updated_at`. Sposób reprezentowania brakującej daty musi być zgodny z regułami przyjętymi w słowniku wymiarów.
 
 ### 7.2. Powiązanie z wymiarem DimDate
 
@@ -257,18 +261,24 @@ Do czasu uzgodnienia powyższych kwestii model finansowy pozostaje projektem log
 
 ### 9.1. Powiązania z wymiarami
 
-Tabela `FactReservation` będzie wykorzystywać klucze obce do odpowiednich wymiarów analitycznych.
+Tabela `mart.fct_reservations` jest powiązana z pięcioma wymiarami analitycznymi.
 
-| Atrybut FactReservation | Wymiar | Powiązanie źródłowe |
+| Atrybut tabeli faktów | Wymiar | Identyfikator lub atrybut źródłowy |
 |---|---|---|
-| `hotel_key` | `DimHotel` | `pms_reservations.hotel_id` |
-| `channel_key` | `DimChannel` | `cm_channels.channel_code` |
-| `booking_date_key` | `DimDate` | `pms_reservations.booking_date` |
-| `check_in_date_key` | `DimDate` | `pms_reservations.check_in_date` |
-| `check_out_date_key` | `DimDate` | `pms_reservations.check_out_date` |
-| `cancellation_date_key` | `DimDate` | Data anulowania, jeśli zostanie udostępniona |
+| `hotel_sk` | `DimHotel` | `pms_reservations.hotel_id` |
+| `channel_sk` | `DimChannel` | `cm_channels.channel_code` |
+| `primary_guest_sk` | `DimGuest` | `pms_reservations.guest_id` |
+| `segment_sk` | `DimSegment` | `pms_reservations.guest_segment` |
+| `booking_date_sk` | `DimDate` | `pms_reservations.booking_date` |
+| `arrival_date_sk` | `DimDate` | `pms_reservations.check_in_date` |
+| `departure_date_sk` | `DimDate` | `pms_reservations.check_out_date` |
+| `cancellation_date_sk` | `DimDate` | Data anulowania, jeśli dostępna |
 
-Przedstawione nazwy są nazwami logicznymi. Ostateczne klucze zostaną dostosowane do zatwierdzonego słownika wymiarów.
+Identyfikatory źródłowe są wykorzystywane do wyszukiwania odpowiednich kluczy zastępczych (`*_sk`) w wymiarach.
+
+Dokładne mapowanie kodów kanałów oraz sposób obsługi brakujących powiązań muszą zostać uzgodnione ze słownikiem wymiarów i procesem transformacji danych.
+
+Połączenie z wymiarami nie może zmieniać liczby unikalnych rezerwacji.
 
 ### 9.2. Zasady przypisywania kluczy
 
