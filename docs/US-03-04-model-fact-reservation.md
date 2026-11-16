@@ -297,3 +297,50 @@ Przed utworzeniem fizycznej tabeli `FactReservation` należy potwierdzić:
 4. Zgodność nazw i typów kluczy z modelem hurtowni.
 
 Dokument przedstawia projekt logiczny relacji, który wymaga weryfikacji z aktualną implementacją wymiarów.
+
+## 10. Obsługa rezerwacji wielopokojowych i pokojonocy
+
+### 10.1. Ziarno FactReservation
+
+Tabela `FactReservation` zachowuje ziarno jednego rekordu na `reservation_id`, niezależnie od liczby pokoi przypisanych do rezerwacji.
+
+Oznacza to, że:
+- Jedna rezerwacja wielopokojowa nadal jest liczona jako jedna rezerwacja.
+- Status oraz informacja o anulowaniu są przechowywane na poziomie całej rezerwacji.
+- Kwoty przypisane do rezerwacji nie mogą być powielane przy analizie poszczególnych pokoi.
+
+### 10.2. Aktualna struktura danych PMS
+
+W obecnym źródle `pms_reservations` występuje pojedynczy atrybut `room_id` przypisany do `reservation_id`.
+
+Na podstawie dostępnej struktury przyjmujemy, że pojedynczy rekord źródłowy reprezentuje rezerwację jednego pokoju. Nie potwierdzono osobnego mechanizmu przechowywania wielu pokoi w ramach jednej rezerwacji.
+
+Przed rozszerzeniem modelu należy zweryfikować to założenie z generatorem PMS.
+
+### 10.3. Proponowany model pokojonocy
+
+W przypadku przyszłej obsługi rezerwacji wielopokojowych szczegółowość pobytów może zostać przedstawiona w osobnej tabeli faktów, np. `FactRoomNight`.
+
+**Proponowane ziarno:** jeden rekord na kombinację `reservation_id`, `room_id` i daty noclegu.
+
+Przykład:
+
+Rezerwacja `R001` obejmuje dwa pokoje na trzy noce.
+
+- `FactReservation`: 1 rekord.
+- `FactRoomNight`: 6 rekordów (2 pokoje × 3 noce).
+- `reservation_count`: 1, a nie 6.
+
+### 10.4. Zasady agregacji
+
+- Liczbę rezerwacji i anulacji oblicza się na poziomie `FactReservation`.
+- Liczbę pokojonocy oblicza się na poziomie `FactRoomNight`.
+- Nie należy sumować miary `reservation_count` po połączeniu z rekordami pokojonocy bez wcześniejszej agregacji lub deduplikacji.
+- Przychód przypisany całej rezerwacji nie może być kopiowany do każdej pokojonocy bez odpowiedniej reguły alokacji.
+- Ewentualny podział przychodu na pokoje i noce wymaga uzgodnienia zasad biznesowych.
+
+### 10.5. Zakres implementacji
+
+W ramach US-03-04 implementowana jest tabela `FactReservation` z ziarnem pojedynczej rezerwacji.
+
+`FactRoomNight` opisano jako koncepcję umożliwiającą przyszłe rozszerzenie modelu. Jej fizyczna implementacja nie jest częścią tego zadania, o ile nie zostanie odrębnie uzgodniona z zespołem.
