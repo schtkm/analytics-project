@@ -411,3 +411,32 @@ Kod `DIRECT` zostanie dodany do słownika `DimChannel` jako ogólny kanał sprze
 ### 12.3. Weryfikacja
 
 Podczas implementacji należy sprawdzić, czy wszystkie kody źródłowe mają jednoznaczne odpowiedniki w `DimChannel` oraz czy każda rezerwacja otrzymuje dokładnie jeden właściwy klucz kanału.
+
+## 13. Obsługa brakującej daty anulowania
+
+### 13.1. Reguły przypisywania daty
+
+W aktualnych danych PMS brak jednoznacznego atrybutu określającego datę anulowania rezerwacji.
+
+Zgodnie z konwencją technicznych wartości wymiaru `DimDate` przyjmuje się następujące zasady:
+
+| Warunek | Wartość `cancellation_date_sk` |
+|---|---|
+| Rezerwacja anulowana, brak daty anulowania | `0` (`UNKNOWN`) |
+| Rezerwacja nieanulowana | `-1` (`NOT_APPLICABLE`) |
+| Rezerwacja anulowana, znana data anulowania | Klucz odpowiedniej daty w `DimDate` |
+
+### 13.2. Zasady jakości danych
+
+- `updated_at` nie jest traktowane jako data anulowania.
+- Nie generuje się sztucznej daty anulowania.
+- Status `NO_SHOW` nie jest równoznaczny z anulowaniem.
+- Wymiar `DimDate` musi zawierać odpowiednie rekordy techniczne dla kluczy `0` i `-1`.
+- Brak rzeczywistej daty anulowania ogranicza możliwość analizowania anulacji według dnia ich wystąpienia.
+- Liczba anulacji nadal może być analizowana według daty dokonania rezerwacji, planowanego pobytu, hotelu i kanału.
+
+### 13.3. Weryfikacja
+
+Podczas testów należy potwierdzić, że każda rezerwacja otrzymuje odpowiedni klucz daty anulowania, a przypisanie wartości technicznych nie narusza integralności referencyjnej.
+
+Reguła zostanie zweryfikowana z fizyczną implementacją `DimDate` przed zasileniem tabeli faktów.
