@@ -480,3 +480,25 @@ Kwoty należy przechowywać jako wartości dziesiętne, np. `NUMERIC(18,2)`.
 Przed implementacją należy potwierdzić walutę danych syntetycznych oraz znaczenie `room_revenue` dla rezerwacji zakończonych, anulowanych i no-show.
 
 Do tego czasu niniejsza sekcja określa zasady projektowe, a nie potwierdzone reguły księgowe.
+
+### 14.5. Weryfikacja reguł finansowych generatora PMS
+
+Analiza kodu generatora `generate_pms_data` potwierdziła następujące zasady:
+
+| Status źródłowy | `room_revenue` | `cancellation_fee` |
+|---|---|---|
+| `Zakończona` | Wartość pobytu | 0 |
+| `W trakcie` | Wartość pobytu | 0 |
+| `Oczekująca` | Wartość planowanego pobytu | 0 |
+| `Anulowana` | 0 | 0 lub 30% wartości rezerwacji |
+| `No-Show` | 0 | 100% wartości rezerwacji |
+
+Wartości są wyliczane syntetycznie na podstawie ceny pokoju, długości pobytu i sezonowości.
+
+**Wnioski:**
+
+- `room_revenue` zawiera zarówno wartości pobytów zakończonych, jak i niezakończonych.
+- Nie należy prezentować sumy `room_revenue` jako faktycznie zrealizowanego przychodu.
+- `cancellation_fee` obejmuje również opłaty no-show, dlatego nazwa źródłowa nie odzwierciedla w pełni znaczenia biznesowego tej miary.
+- Do rozdzielania wartości według statusów należy stosować `reservation_status`.
+- Generator nie określa kodu waluty. Wybór waluty bazowej pozostaje decyzją projektową wymagającą udokumentowania.
