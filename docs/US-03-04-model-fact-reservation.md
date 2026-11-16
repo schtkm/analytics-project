@@ -64,3 +64,52 @@ Tabela `staging.cm_channels` zawiera informacje o kanałach pozyskania rezerwacj
 - `commission_amount` może stanowić miarę finansową tabeli `FactReservation`.
 - `commission_rate` pozostaje atrybutem źródłowym; sposób jego wykorzystania w modelu wymaga uzgodnienia.
 - Zweryfikowano 140 875 rekordów Channel Managera, bez duplikatów identyfikatorów i bez brakujących powiązań z PMS.
+
+## 5. Projekt struktury tabeli FactReservation
+
+### 5.1. Założenia modelu
+
+`FactReservation` stanowi tabelę faktów przechowującą ostatni znany stan każdej rezerwacji.
+
+- Ziarno: jeden rekord na `reservation_id`.
+- Źródło podstawowe: `staging.pms_reservations`.
+- Źródło uzupełniające: `staging.cm_channels`.
+- Wymiary analityczne: `DimDate`, `DimHotel`, `DimChannel`.
+- Rezerwacje anulowane oraz no-show pozostają w tabeli.
+- Historia zmian statusów nie jest przechowywana w tej tabeli.
+
+### 5.2. Proponowane atrybuty
+
+| Atrybut logiczny | Znaczenie | Źródło |
+|---|---|---|
+| `reservation_id` | Unikalny identyfikator rezerwacji | PMS |
+| `booking_date_key` | Powiązanie daty rezerwacji z DimDate | PMS / DimDate |
+| `check_in_date_key` | Powiązanie planowanego zameldowania z DimDate | PMS / DimDate |
+| `check_out_date_key` | Powiązanie planowanego wymeldowania z DimDate | PMS / DimDate |
+| `hotel_key` | Powiązanie z DimHotel | PMS / DimHotel |
+| `channel_key` | Powiązanie z DimChannel | Channel Manager / DimChannel |
+| `reservation_status` | Ujednolicony status rezerwacji | PMS |
+| `room_revenue` | Kwota przychodu z rezerwacji | PMS |
+| `cancellation_fee` | Opłata za anulowanie | PMS |
+| `commission_amount` | Kwota prowizji kanału sprzedaży | Channel Manager |
+| `reservation_count` | Miara liczby rezerwacji, przyjmująca wartość 1 | Wyliczana |
+| `cancellation_count` | Miara anulacji: 1 dla anulowanych, 0 dla pozostałych | Wyliczana |
+
+### 5.3. Atrybuty wymagające dodatkowych ustaleń
+
+**Data anulowania:** w dotychczasowej strukturze PMS nie ma osobnego pola daty anulowania. Nie należy zastępować go automatycznie przez `updated_at`. Konieczne jest uzgodnienie sposobu pozyskania daty lub udokumentowanie jej niedostępności.
+
+**Waluta:** kolumny kwotowe PMS i Channel Managera nie zawierają kodu waluty. Przed implementacją należy ustalić walutę danych syntetycznych i sposób dokumentowania tego założenia.
+
+**Klucze wymiarów:** nazwy i typy kluczy należy dostosować do zatwierdzonych struktur `DimDate`, `DimHotel` i `DimChannel`.
+
+**Statusy:** przed implementacją należy uzgodnić mapowanie statusów źródłowych na wspólne kategorie analityczne.
+
+### 5.4. Zasady zapobiegania podwójnemu liczeniu
+
+- `reservation_id` musi być unikalny w tabeli faktów.
+- Jedna rezerwacja jest liczona dokładnie raz, niezależnie od statusu.
+- `reservation_count = 1` dla każdego rekordu.
+- `cancellation_count = 1` wyłącznie dla rezerwacji sklasyfikowanych jako anulowane.
+- Status no-show nie oznacza automatycznie anulowania.
+- Łączenie danych PMS i Channel Managera nie może zwiększać liczby rezerwacji.
