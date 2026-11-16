@@ -147,3 +147,53 @@ Przykładowo rezerwacja o statusie `NO_SHOW` zwiększa liczbę rezerwacji, ale n
 - Nieznany status źródłowy wymaga obsługi przez reguły jakości danych w procesie ETL.
 - Zmiana statusu nie powoduje dodania nowego rekordu do `FactReservation`.
 - Powyższe mapowanie jest propozycją do uzgodnienia z zespołem przed implementacją.
+
+## 7. Modelowanie dat rezerwacji i pobytu
+
+### 7.1. Daty wykorzystywane w FactReservation
+
+Tabela faktów będzie przechowywać powiązania z wymiarem `DimDate` dla trzech podstawowych dat.
+
+| Atrybut | Źródło | Znaczenie |
+|---|---|---|
+| `booking_date_key` | `booking_date` | Data utworzenia rezerwacji |
+| `check_in_date_key` | `check_in_date` | Planowana data zameldowania |
+| `check_out_date_key` | `check_out_date` | Planowana data wymeldowania |
+| `cancellation_date_key` | Do ustalenia | Data anulowania rezerwacji, jeśli jest dostępna |
+
+### 7.2. Powiązanie z wymiarem DimDate
+
+Wszystkie klucze dat będą wskazywać na ten sam wymiar `DimDate`, pełniący różne role analityczne (role-playing dimension).
+
+Pozwoli to analizować rezerwacje według daty ich utworzenia oraz terminów planowanego pobytu.
+
+Szczegółowe nazwy, typy i wartości kluczy muszą być zgodne z zatwierdzoną strukturą `DimDate`.
+
+### 7.3. Obsługa daty anulowania
+
+Aktualny model źródłowy PMS nie udostępnia jednoznacznego pola `cancellation_date`.
+
+Przyjmuje się następujące założenia projektowe:
+
+- Nie należy utożsamiać `updated_at` z datą anulowania.
+- `cancellation_date_key` pozostaje opcjonalnym atrybutem logicznym do czasu uzgodnienia źródła danych.
+- Nie wolno generować fikcyjnej daty anulowania na potrzeby raportowania rzeczywistych zdarzeń.
+- Jeśli data anulowania nie będzie dostępna, należy udokumentować ograniczenie analizy anulacji w czasie.
+
+### 7.4. Zasady poprawności dat
+
+Podczas późniejszej implementacji należy zweryfikować:
+
+- Czy daty rezerwacji i pobytu mają poprawny format.
+- Czy `check_out_date` jest późniejsza niż `check_in_date`.
+- Czy wszystkie wymagane daty mają odpowiedniki w `DimDate`.
+- Czy brakujące lub nieprawidłowe daty są wykrywane przez testy jakości.
+- Czy zakres dat obejmuje wymagane minimum 24 miesiące historii.
+
+Szczegółowe reguły czyszczenia i obsługi odrzuconych rekordów zostaną uzgodnione z procesem ETL.
+
+### 7.5. Ograniczenia
+
+`FactReservation` przechowuje daty graniczne pobytu, a nie osobne rekordy dla każdej pokojonocy.
+
+Analizy zajętości i przychodów w rozbiciu na poszczególne noce wymagają odrębnego modelu faktów pokojonocy.
