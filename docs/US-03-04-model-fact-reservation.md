@@ -502,3 +502,26 @@ Wartości są wyliczane syntetycznie na podstawie ceny pokoju, długości pobytu
 - `cancellation_fee` obejmuje również opłaty no-show, dlatego nazwa źródłowa nie odzwierciedla w pełni znaczenia biznesowego tej miary.
 - Do rozdzielania wartości według statusów należy stosować `reservation_status`.
 - Generator nie określa kodu waluty. Wybór waluty bazowej pozostaje decyzją projektową wymagającą udokumentowania.
+
+### 14.6. Reguły finansowe Channel Managera
+
+W ramach US-02-01 przyjęto syntetyczny model prowizji zależny od kanału sprzedaży.
+
+| Kod kanału | Stawka prowizji |
+|---|---:|
+| `DIRECT` | 0% |
+| `BOOKING` | 15% |
+| `EXPEDIA` | 18% |
+
+Prowizja jest wyliczana na podstawie `room_revenue`. Dla rezerwacji anulowanych oraz no-show przyjęto prowizję równą 0.
+
+**Zasady modelowania:**
+
+- `commission_amount` jest przechowywana jako odrębna miara finansowa w `mart.fct_reservations`.
+- Kwota prowizji jest przypisana do pojedynczej rezerwacji.
+- Stawka prowizji nie stanowi miary addytywnej i nie powinna być sumowana.
+- Rezerwacje z kanału `DIRECT` nie generują prowizji.
+- Prowizji nie należy automatycznie traktować jako kosztu faktycznie zaksięgowanego.
+- Reguły są założeniami generatora danych syntetycznych, a nie uniwersalnymi zasadami rozliczeń hotelowych.
+
+Podczas implementacji należy porównać sumy `commission_amount` między źródłem Channel Managera a tabelą faktów oraz sprawdzić, czy połączenie źródeł nie powoduje powielania kwot.
