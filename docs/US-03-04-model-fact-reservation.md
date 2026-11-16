@@ -6,15 +6,15 @@ Celem jest zaprojektowanie tabeli faktów `FactReservation`, umożliwiającej an
 
 Model powinien zapewniać jednoznaczne liczenie rezerwacji, bez wielokrotnego uwzględniania tego samego identyfikatora.
 
-## 2. Ziarno tabeli FactReservation
+## 2. Ziarno tabeli mart.fct_reservations
 
-**Ziarno:** jeden rekord tabeli `FactReservation` reprezentuje jedną unikalną rezerwację identyfikowaną przez `reservation_id`, w jej ostatnim znanym stanie.
+**Ziarno:** jeden rekord tabeli `mart.fct_reservations` reprezentuje jedną unikalną rezerwację, identyfikowaną przez `reservation_bk` (pochodzący z `pms_reservations.reservation_id`), w jej ostatnim znanym stanie.
 
 Założenia:
 
 - Zmiana statusu rezerwacji nie powoduje utworzenia kolejnego rekordu.
 - Rezerwacje anulowane i typu no-show pozostają w tabeli faktów.
-- Jeden identyfikator rezerwacji może wystąpić w `FactReservation` tylko raz.
+- Jeden identyfikator `reservation_bk` może wystąpić w `mart.fct_reservations` tylko raz.
 - Szczegółowe rozliczenie pokojonocy, jeśli będzie wymagane, zostanie zamodelowane oddzielnie.
 - Tabela przechowuje aktualny stan rezerwacji, a nie pełną historię zmian statusów.
 
@@ -119,7 +119,7 @@ Nazwy kluczy zastępczych zachowują konwencję `_sk`. Identyfikator rezerwacji 
 
 ### 5.4. Zasady zapobiegania podwójnemu liczeniu
 
-- `reservation_id` musi być unikalny w tabeli faktów.
+- `reservation_bk` musi być unikalny w tabeli faktów.
 - Jedna rezerwacja jest liczona dokładnie raz, niezależnie od statusu.
 - `reservation_count = 1` dla każdego rekordu.
 - `cancellation_count = 1` wyłącznie dla rezerwacji sklasyfikowanych jako anulowane.
@@ -349,9 +349,11 @@ Przykład:
 
 Rezerwacja `R001` obejmuje dwa pokoje na trzy noce.
 
-- `FactReservation`: 1 rekord.
+- `mart.fct_reservations`: 1 rekord.
 - `FactRoomNight`: 6 rekordów (2 pokoje × 3 noce).
 - `reservation_count`: 1, a nie 6.
+
+W przykładzie `R001` jest wartością biznesowego identyfikatora rezerwacji (`reservation_bk`).
 
 ### 10.4. Zasady agregacji
 
