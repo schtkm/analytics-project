@@ -240,3 +240,60 @@ Przed implementacją należy potwierdzić:
 4. Czy `currency_code` będzie przechowywany bezpośrednio w tabeli faktów, czy za pomocą osobnego wymiaru waluty.
 
 Do czasu uzgodnienia powyższych kwestii model finansowy pozostaje projektem logicznym.
+
+## 9. Relacje FactReservation z wymiarami
+
+### 9.1. Powiązania z wymiarami
+
+Tabela `FactReservation` będzie wykorzystywać klucze obce do odpowiednich wymiarów analitycznych.
+
+| Atrybut FactReservation | Wymiar | Powiązanie źródłowe |
+|---|---|---|
+| `hotel_key` | `DimHotel` | `pms_reservations.hotel_id` |
+| `channel_key` | `DimChannel` | `cm_channels.channel_code` |
+| `booking_date_key` | `DimDate` | `pms_reservations.booking_date` |
+| `check_in_date_key` | `DimDate` | `pms_reservations.check_in_date` |
+| `check_out_date_key` | `DimDate` | `pms_reservations.check_out_date` |
+| `cancellation_date_key` | `DimDate` | Data anulowania, jeśli zostanie udostępniona |
+
+Przedstawione nazwy są nazwami logicznymi. Ostateczne klucze zostaną dostosowane do zatwierdzonego słownika wymiarów.
+
+### 9.2. Zasady przypisywania kluczy
+
+- `hotel_id` jest identyfikatorem źródłowym, na podstawie którego wyszukiwany jest odpowiedni rekord `DimHotel`.
+- `channel_code` jest identyfikatorem źródłowym wykorzystywanym do przypisania `DimChannel`.
+- Daty źródłowe są mapowane na odpowiednie rekordy `DimDate`.
+- Jeżeli wymiary wykorzystują klucze zastępcze, tabela faktów powinna przechowywać te klucze zamiast identyfikatorów źródłowych.
+- Dla wymiarów przechowujących historię zmian należy zastosować zasady wyboru właściwej wersji rekordu uzgodnione z zespołem.
+
+### 9.3. Obsługa brakujących powiązań
+
+Podczas ładowania tabeli faktów należy wykrywać sytuacje, w których:
+
+- Rezerwacja wskazuje hotel nieistniejący w `DimHotel`.
+- Kod kanału nie ma odpowiednika w `DimChannel`.
+- Data rezerwacji lub pobytu nie występuje w `DimDate`.
+- Połączenie z wymiarem zwraca więcej niż jeden niezamierzony rekord.
+
+Takie przypadki muszą być raportowane przez testy jakości danych.
+
+Sposób obsługi brakujących powiązań (odrzucenie rekordu, zastosowanie rekordu technicznego `UNKNOWN` lub inna uzgodniona reguła) zostanie ustalony przed implementacją.
+
+### 9.4. Integralność i zachowanie ziarna
+
+- Każdy rekord `FactReservation` musi odpowiadać dokładnie jednej rezerwacji PMS.
+- Powiązanie z wymiarami nie może powodować zwielokrotnienia rezerwacji.
+- Klucze wymiarów powinny mieć odpowiedniki w tabelach wymiarowych zgodnie z przyjętymi regułami obsługi braków.
+- Liczba rezerwacji po powiązaniu z wymiarami musi zostać uzgodniona z liczbą poprawnych rekordów źródłowych.
+- Każde odrzucenie rezerwacji przez reguły jakości powinno zostać udokumentowane.
+
+### 9.5. Zależności implementacyjne
+
+Przed utworzeniem fizycznej tabeli `FactReservation` należy potwierdzić:
+
+1. Struktury oraz klucze `DimDate`, `DimHotel` i `DimChannel`.
+2. Dostępność oczyszczonych danych PMS i Channel Managera.
+3. Uzgodnione reguły obsługi brakujących powiązań.
+4. Zgodność nazw i typów kluczy z modelem hurtowni.
+
+Dokument przedstawia projekt logiczny relacji, który wymaga weryfikacji z aktualną implementacją wymiarów.
