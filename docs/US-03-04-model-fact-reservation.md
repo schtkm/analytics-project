@@ -571,3 +571,36 @@ Reguły brakujących powiązań i dopuszczalność wartości NULL zostaną ostat
 Implementacja zostanie wykonana przez rozszerzenie istniejącej tabeli `mart.fct_reservations`, bez tworzenia równoległej tabeli faktów.
 
 Przed przygotowaniem migracji SQL należy zweryfikować typy istniejących kolumn, ograniczenia oraz zależności z pozostałymi elementami modelu hurtowni.
+
+## 16. Plan testów akceptacyjnych
+
+Testy zostaną wykonane po utworzeniu i zasileniu tabeli `mart.fct_reservations`. Poniższe przypadki testowe wynikają z kryteriów akceptacji US-03-04.
+
+| ID | Test | Oczekiwany rezultat |
+|---|---|---|
+| T01 | Unikalność `reservation_bk` | Brak duplikatów identyfikatorów rezerwacji |
+| T02 | Zgodność liczby rezerwacji | Liczba rekordów faktu zgodna z liczbą zaakceptowanych rezerwacji źródłowych |
+| T03 | Mapowanie statusów | Wszystkie rezerwacje mają jeden z pięciu uzgodnionych statusów |
+| T04 | Liczenie rezerwacji | `reservation_count = 1` dla każdego rekordu |
+| T05 | Liczenie anulacji | `cancellation_count = 1` wyłącznie dla statusu `CANCELLED` |
+| T06 | Integralność wymiarów | Brak niedozwolonych lub nieistniejących kluczy wymiarów |
+| T07 | Mapowanie kanałów | Wszystkie kody kanałów są poprawnie przypisane do `DimChannel` |
+| T08 | Zakres historyczny | Dane obejmują minimum 24 miesiące historii |
+| T09 | Liczebność danych | Minimum 50 000 rezerwacji źródłowych; wszystkie odrzucenia udokumentowane |
+| T10 | Kwoty finansowe | Zgodność sum kwot z zaakceptowanymi danymi źródłowymi |
+| T11 | Data anulowania | Poprawne przypisanie daty lub wartości `UNKNOWN` / `NOT_APPLICABLE` |
+| T12 | Ponowne zasilenie | Ponowne uruchomienie nie powoduje niezamierzonych duplikatów |
+
+### 16.1. Zasady weryfikacji
+
+- Testy dotyczą faktycznie załadowanych danych, a nie wyłącznie definicji tabeli.
+- Każdy wynik należy udokumentować jako PASS lub FAIL.
+- Różnice liczebności między źródłem a tabelą faktów muszą być wyjaśnione.
+- Testy powiązań obejmują `DimDate`, `DimHotel`, `DimChannel`, `DimGuest` i `DimSegment`.
+- Wyniki testów powinny zostać dołączone do dokumentacji implementacji lub Pull Requesta.
+
+### 16.2. Status testów
+
+Wszystkie testy T01–T12 mają obecnie status **NOT RUN**.
+
+Weryfikacja liczebności i spójności danych źródłowych wykonana w US-02-01 nie zastępuje testów docelowej tabeli `mart.fct_reservations`.
