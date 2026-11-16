@@ -47,14 +47,20 @@ Tabela `staging.pms_reservations` zawiera dane potrzebne do identyfikacji rezerw
 
 ### 4.2. Channel Manager
 
-Dane `staging.cm_channels` są powiązane z PMS przez `reservation_id` i dostarczają informacji o kanale sprzedaży oraz prowizjach.
+Tabela `staging.cm_channels` zawiera informacje o kanałach pozyskania rezerwacji i naliczonych prowizjach.
 
-Przed opracowaniem szczegółowego mapowania należy potwierdzić nazwy kolumn w aktualnym schemacie tabeli.
+| Atrybut źródłowy | Znaczenie |
+|---|---|
+| `reservation_id` | Identyfikator rezerwacji, łączący Channel Manager z PMS |
+| `channel_code` | Kod kanału sprzedaży (np. DIRECT, BOOKING, EXPEDIA) |
+| `commission_rate` | Stawka prowizji kanału |
+| `commission_amount` | Kwota prowizji przypisana do rezerwacji |
+| `_inserted_at` | Techniczny znacznik czasu załadowania rekordu do staging |
 
-### 4.3. Wstępne wnioski
+**Wnioski projektowe:**
 
-- `reservation_id` stanowi podstawę połączenia obu źródeł.
-- PMS jest głównym źródłem statusów, dat i kwot rezerwacji.
-- Channel Manager uzupełnia dane o kanał sprzedaży i prowizje.
-- W PMS nie potwierdzono osobnego pola daty anulowania. `updated_at` nie może automatycznie zastępować daty anulowania.
-- Dane źródłowe wymagają uzgodnienia z docelowymi wymiarami hurtowni przed implementacją `FactReservation`.
+- Połączenie PMS i Channel Managera odbywa się przez `reservation_id`.
+- `channel_code` będzie podstawą powiązania rezerwacji z wymiarem `DimChannel`.
+- `commission_amount` może stanowić miarę finansową tabeli `FactReservation`.
+- `commission_rate` pozostaje atrybutem źródłowym; sposób jego wykorzystania w modelu wymaga uzgodnienia.
+- Zweryfikowano 140 875 rekordów Channel Managera, bez duplikatów identyfikatorów i bez brakujących powiązań z PMS.
