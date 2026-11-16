@@ -440,3 +440,43 @@ Zgodnie z konwencją technicznych wartości wymiaru `DimDate` przyjmuje się nas
 Podczas testów należy potwierdzić, że każda rezerwacja otrzymuje odpowiedni klucz daty anulowania, a przypisanie wartości technicznych nie narusza integralności referencyjnej.
 
 Reguła zostanie zweryfikowana z fizyczną implementacją `DimDate` przed zasileniem tabeli faktów.
+
+
+## 14. Zasady interpretacji kwot i waluty
+
+### 14.1. Waluta danych
+
+Dane źródłowe PMS i Channel Managera nie zawierają jawnego kodu waluty.
+
+Przyjęto następujące zasady projektowe:
+
+- Wszystkie kwoty w `mart.fct_reservations` muszą być wyrażone w jednej, udokumentowanej walucie.
+- Waluta zostanie potwierdzona na podstawie generatorów i ustaleń dotyczących danych syntetycznych.
+- Atrybut `currency_code` będzie przechowywał kod waluty zgodny z ISO 4217.
+- Do czasu potwierdzenia waluty nie przypisuje się arbitralnie kodu `PLN` ani `EUR`.
+- Ewentualne przeliczanie walut wymaga osobno określonych reguł oraz źródła kursów.
+
+### 14.2. Interpretacja miar finansowych
+
+| Miara | Interpretacja |
+|---|---|
+| `room_revenue` | Źródłowa wartość przypisana do rezerwacji; nie jest automatycznie uznawana za przychód zrealizowany |
+| `cancellation_fee` | Opłata związana z anulowaniem rezerwacji |
+| `commission_amount` | Prowizja kanału sprzedaży przypisana do rezerwacji |
+
+Kwoty należy przechowywać jako wartości dziesiętne, np. `NUMERIC(18,2)`.
+
+### 14.3. Zasady raportowania
+
+- Kwoty można agregować wyłącznie przy zachowaniu jednego rekordu na `reservation_bk` oraz zgodności waluty.
+- Anulowane rezerwacje i no-show pozostają w tabeli faktów.
+- `room_revenue` nie może być automatycznie interpretowane jako rzeczywisty przychód hotelu.
+- `cancellation_fee` i `commission_amount` pozostają odrębnymi miarami.
+- Nie wylicza się przychodu netto bez uzgodnionej definicji biznesowej.
+- Przed wdrożeniem należy sprawdzić sposób wyznaczania kwot w generatorach danych PMS i Channel Managera.
+
+### 14.4. Warunki zatwierdzenia
+
+Przed implementacją należy potwierdzić walutę danych syntetycznych oraz znaczenie `room_revenue` dla rezerwacji zakończonych, anulowanych i no-show.
+
+Do tego czasu niniejsza sekcja określa zasady projektowe, a nie potwierdzone reguły księgowe.
