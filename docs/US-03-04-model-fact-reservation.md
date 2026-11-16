@@ -525,3 +525,49 @@ Prowizja jest wyliczana na podstawie `room_revenue`. Dla rezerwacji anulowanych 
 - Reguły są założeniami generatora danych syntetycznych, a nie uniwersalnymi zasadami rozliczeń hotelowych.
 
 Podczas implementacji należy porównać sumy `commission_amount` między źródłem Channel Managera a tabelą faktów oraz sprawdzić, czy połączenie źródeł nie powoduje powielania kwot.
+
+## 15. Specyfikacja techniczna mart.fct_reservations
+
+### 15.1. Proponowane typy danych
+
+| Kolumna | Proponowany typ PostgreSQL | Ograniczenia |
+|---|---|---|
+| `reservation_sk` | `BIGINT` | PRIMARY KEY |
+| `reservation_bk` | `VARCHAR(50)` | NOT NULL, UNIQUE |
+| `hotel_sk` | `BIGINT` | FK → DimHotel |
+| `channel_sk` | `BIGINT` | FK → DimChannel |
+| `primary_guest_sk` | `BIGINT` | FK → DimGuest |
+| `segment_sk` | `BIGINT` | FK → DimSegment |
+| `booking_date_sk` | `INTEGER` | FK → DimDate |
+| `arrival_date_sk` | `INTEGER` | FK → DimDate |
+| `departure_date_sk` | `INTEGER` | FK → DimDate |
+| `cancellation_date_sk` | `INTEGER` | FK → DimDate |
+| `reservation_status` | `VARCHAR(20)` | NOT NULL |
+| `reservation_count` | `SMALLINT` | NOT NULL, DEFAULT 1 |
+| `cancellation_count` | `SMALLINT` | NOT NULL, DEFAULT 0 |
+| `room_revenue` | `NUMERIC(18,2)` | Kwota nieujemna |
+| `cancellation_fee` | `NUMERIC(18,2)` | Kwota nieujemna |
+| `commission_amount` | `NUMERIC(18,2)` | Kwota nieujemna |
+| `currency_code` | `CHAR(3)` | Kod waluty ISO 4217 |
+
+Podane typy są propozycją. Ostateczne typy kluczy obcych muszą być identyczne z typami kluczy głównych odpowiednich wymiarów w istniejącym schemacie SQL.
+
+### 15.2. Ograniczenia integralności
+
+Docelowa implementacja powinna zapewniać:
+
+- Unikalność `reservation_bk`.
+- Poprawne powiązania z wymiarami.
+- Dopuszczenie wyłącznie pięciu uzgodnionych statusów analitycznych.
+- `reservation_count = 1` dla każdej rezerwacji.
+- `cancellation_count = 1` wyłącznie dla statusu `CANCELLED`, w pozostałych przypadkach 0.
+- Nieujemne kwoty finansowe.
+- Zgodność `currency_code` z ustaloną walutą danych.
+
+Reguły brakujących powiązań i dopuszczalność wartości NULL zostaną ostatecznie ustalone po weryfikacji fizycznych struktur wymiarów.
+
+### 15.3. Zasada wdrożenia
+
+Implementacja zostanie wykonana przez rozszerzenie istniejącej tabeli `mart.fct_reservations`, bez tworzenia równoległej tabeli faktów.
+
+Przed przygotowaniem migracji SQL należy zweryfikować typy istniejących kolumn, ograniczenia oraz zależności z pozostałymi elementami modelu hurtowni.
