@@ -344,3 +344,17 @@ Rezerwacja `R001` obejmuje dwa pokoje na trzy noce.
 W ramach US-03-04 implementowana jest tabela `FactReservation` z ziarnem pojedynczej rezerwacji.
 
 `FactRoomNight` opisano jako koncepcję umożliwiającą przyszłe rozszerzenie modelu. Jej fizyczna implementacja nie jest częścią tego zadania, o ile nie zostanie odrębnie uzgodniona z zespołem.
+
+## 11. Decyzja projektowa – zgodność z istniejącym modelem hurtowni
+
+W ramach US-03-04 przyjęto rozszerzenie istniejącej tabeli `mart.fct_reservations`, zamiast tworzenia osobnej tabeli `FactReservation`.
+
+Zachowane zostają istniejące nazwy kluczy technicznych i powiązań z wymiarami (`*_sk`). Ziarno tabeli wynosi jeden rekord na `reservation_bk`, a jego unikalność zostanie wymuszona ograniczeniem `UNIQUE`.
+
+Model zostanie uzupełniony o miary liczby rezerwacji i anulacji oraz kwoty przychodów, opłat za anulowanie i prowizji. Uwzględnione zostaną także powiązania z `DimGuest` i `DimSegment`.
+
+Dane do tabeli faktów będą pochodzić z oczyszczonej warstwy `core`, zgodnie z architekturą `staging → core → mart`.
+
+**Przed implementacją fizyczną** należy potwierdzić zgodność struktur wymiarów, mapowania kanałów sprzedaży, walutę oraz dostępność danych o anulacjach.
+
+Niniejsza decyzja stanowi propozycję implementacyjną US-03-04 podlegającą Code Review zespołu. Zmiany istniejącego schematu SQL będą realizowane w ramach osobnego commita po weryfikacji zależności.
