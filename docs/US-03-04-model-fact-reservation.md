@@ -197,3 +197,46 @@ Szczegółowe reguły czyszczenia i obsługi odrzuconych rekordów zostaną uzgo
 `FactReservation` przechowuje daty graniczne pobytu, a nie osobne rekordy dla każdej pokojonocy.
 
 Analizy zajętości i przychodów w rozbiciu na poszczególne noce wymagają odrębnego modelu faktów pokojonocy.
+
+## 8. Modelowanie waluty i kwot finansowych
+
+### 8.1. Miary finansowe
+
+Tabela `FactReservation` będzie przechowywać następujące kwoty na poziomie pojedynczej rezerwacji.
+
+| Atrybut | Źródło | Znaczenie |
+|---|---|---|
+| `room_revenue` | `pms_reservations.room_revenue` | Wartość przychodu przypisana do rezerwacji |
+| `cancellation_fee` | `pms_reservations.cancellation_fee` | Opłata naliczona za anulowanie rezerwacji |
+| `commission_amount` | `cm_channels.commission_amount` | Kwota prowizji kanału sprzedaży |
+
+Miary będą przechowywane z dokładnością do dwóch miejsc po przecinku, w typie liczbowym odpowiednim dla kwot finansowych, np. `NUMERIC(18,2)` w PostgreSQL.
+
+### 8.2. Waluta
+
+Dostępne pola źródłowe nie zawierają jawnego kodu waluty. W związku z tym:
+
+- Przed implementacją należy uzgodnić jedną walutę bazową danych syntetycznych.
+- Nie należy zakładać, że kwoty są wyrażone w PLN bez potwierdzenia tego założenia.
+- Wszystkie miary finansowe w tabeli faktów muszą być wyrażone w uzgodnionej walucie.
+- W projekcie logicznym przewiduje się atrybut `currency_code`, np. zgodny z ISO 4217.
+- Jeśli źródła będą wykorzystywać różne waluty, konieczne będzie zdefiniowanie zasad przeliczania i dokumentowania kursów.
+
+### 8.3. Zasady agregacji
+
+- Kwoty finansowe są przypisane do jednej rezerwacji i nie mogą być powielane przez połączenia z innymi tabelami.
+- `room_revenue`, `cancellation_fee` oraz `commission_amount` można sumować na poziomie rezerwacji, hotelu i kanału, pod warunkiem zachowania ziarna faktu i wspólnej waluty.
+- `commission_rate` jest wskaźnikiem procentowym i nie należy sumować jego wartości.
+- Nie należy automatycznie utożsamiać `room_revenue - commission_amount` z zaksięgowanym przychodem netto.
+- Opłata za anulowanie jest przechowywana odrębnie od wartości rezerwacji, aby uniknąć podwójnego liczenia.
+
+### 8.4. Kwestie wymagające uzgodnienia
+
+Przed implementacją należy potwierdzić:
+
+1. Walutę bazową danych PMS i Channel Managera.
+2. Czy `room_revenue` oznacza wartość rezerwacji, czy faktycznie zrealizowany przychód.
+3. Sposób interpretacji kwot dla rezerwacji anulowanych i no-show.
+4. Czy `currency_code` będzie przechowywany bezpośrednio w tabeli faktów, czy za pomocą osobnego wymiaru waluty.
+
+Do czasu uzgodnienia powyższych kwestii model finansowy pozostaje projektem logicznym.
