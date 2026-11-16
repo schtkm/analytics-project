@@ -69,31 +69,43 @@ Tabela `staging.cm_channels` zawiera informacje o kanałach pozyskania rezerwacj
 
 ### 5.1. Założenia modelu
 
-`FactReservation` stanowi tabelę faktów przechowującą ostatni znany stan każdej rezerwacji.
+Docelową tabelą faktów rezerwacji jest `mart.fct_reservations`, zgodnie z istniejącym modelem hurtowni HotelGroup. Nazwa `FactReservation` jest stosowana jako określenie biznesowe.
 
-- Ziarno: jeden rekord na `reservation_id`.
-- Źródło podstawowe: `staging.pms_reservations`.
-- Źródło uzupełniające: `staging.cm_channels`.
-- Wymiary analityczne: `DimDate`, `DimHotel`, `DimChannel`.
-- Rezerwacje anulowane oraz no-show pozostają w tabeli.
-- Historia zmian statusów nie jest przechowywana w tej tabeli.
+- **Ziarno:** jeden rekord na unikalną rezerwację (`reservation_bk`).
+- **Klucz techniczny:** `reservation_sk`.
+- **Źródło identyfikatora biznesowego:** `pms_reservations.reservation_id`.
+- **Źródła danych:** oczyszczone dane PMS oraz Channel Managera z warstwy `core`.
+- **Wymiary:** `DimDate`, `DimHotel`, `DimChannel`, `DimGuest`, `DimSegment`.
+- **Historia:** tabela przechowuje ostatni znany stan rezerwacji, bez historii zmian statusów.
+- **Integralność:** `reservation_bk` musi być unikalny.
 
-### 5.2. Proponowane atrybuty
+### 5.2. Docelowe atrybuty logiczne
 
-| Atrybut logiczny | Znaczenie | Źródło |
+Poniższa struktura wykorzystuje nazewnictwo istniejącej tabeli `mart.fct_reservations` oraz proponowane rozszerzenia wymagane do realizacji US-03-04.
+
+| Atrybut | Znaczenie | Status |
 |---|---|---|
-| `reservation_id` | Unikalny identyfikator rezerwacji | PMS |
-| `booking_date_key` | Powiązanie daty rezerwacji z DimDate | PMS / DimDate |
-| `check_in_date_key` | Powiązanie planowanego zameldowania z DimDate | PMS / DimDate |
-| `check_out_date_key` | Powiązanie planowanego wymeldowania z DimDate | PMS / DimDate |
-| `hotel_key` | Powiązanie z DimHotel | PMS / DimHotel |
-| `channel_key` | Powiązanie z DimChannel | Channel Manager / DimChannel |
-| `reservation_status` | Ujednolicony status rezerwacji | PMS |
-| `room_revenue` | Kwota przychodu z rezerwacji | PMS |
-| `cancellation_fee` | Opłata za anulowanie | PMS |
-| `commission_amount` | Kwota prowizji kanału sprzedaży | Channel Manager |
-| `reservation_count` | Miara liczby rezerwacji, przyjmująca wartość 1 | Wyliczana |
-| `cancellation_count` | Miara anulacji: 1 dla anulowanych, 0 dla pozostałych | Wyliczana |
+| `reservation_sk` | Techniczny klucz główny | Istniejący model |
+| `reservation_bk` | Biznesowy identyfikator rezerwacji | Istniejący model |
+| `hotel_sk` | Klucz wymiaru hotelu | Istniejący model |
+| `channel_sk` | Klucz wymiaru kanału | Istniejący model |
+| `primary_guest_sk` | Klucz wymiaru gościa | Istniejący model |
+| `segment_sk` | Klucz wymiaru segmentu | Istniejący model |
+| `booking_date_sk` | Data dokonania rezerwacji | Istniejący model |
+| `arrival_date_sk` | Planowana data zameldowania | Istniejący model |
+| `departure_date_sk` | Planowana data wymeldowania | Istniejący model |
+| `cancellation_date_sk` | Data anulowania, jeśli dostępna | Istniejący model |
+| `reservation_status` | Ujednolicony status rezerwacji | Istniejący model |
+| `reservation_count` | Liczba rezerwacji: zawsze 1 | Proponowane rozszerzenie |
+| `cancellation_count` | Liczba anulacji: 1 lub 0 | Proponowane rozszerzenie |
+| `room_revenue` | Wartość rezerwacji | Proponowane rozszerzenie |
+| `cancellation_fee` | Opłata za anulowanie | Proponowane rozszerzenie |
+| `commission_amount` | Prowizja kanału sprzedaży | Proponowane rozszerzenie |
+| `currency_code` | Kod waluty kwot finansowych | Proponowane rozszerzenie |
+
+**Uwagi:** oznaczenie „Istniejący model” odnosi się do definicji w udostępnionym skrypcie SQL, nie potwierdza fizycznego utworzenia tabeli w bazie. Proponowane rozszerzenia wymagają uwzględnienia w aktualizacji schematu.
+
+Nazwy kluczy zastępczych zachowują konwencję `_sk`. Identyfikator rezerwacji z PMS jest mapowany na `reservation_bk`, natomiast `reservation_sk` jest generowany w hurtowni.
 
 ### 5.3. Atrybuty wymagające dodatkowych ustaleń
 
