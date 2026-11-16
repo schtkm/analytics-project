@@ -24,3 +24,37 @@ Założenia:
 - `staging.cm_channels` – kanał sprzedaży i informacje o prowizjach.
 
 Powiązanie źródeł następuje za pomocą `reservation_id`.
+
+## 4. Analiza danych źródłowych
+
+### 4.1. PMS – rezerwacje
+
+Tabela `staging.pms_reservations` zawiera dane potrzebne do identyfikacji rezerwacji, określenia jej statusu oraz analizy wartości i terminów pobytu.
+
+| Atrybut źródłowy | Znaczenie |
+|---|---|
+| `reservation_id` | Unikalny identyfikator rezerwacji |
+| `hotel_id` | Identyfikator hotelu |
+| `guest_id` | Identyfikator gościa |
+| `room_id` | Identyfikator pokoju |
+| `booking_date` | Data dokonania rezerwacji |
+| `check_in_date` | Planowana data zameldowania |
+| `check_out_date` | Planowana data wymeldowania |
+| `status` | Aktualny status rezerwacji |
+| `room_revenue` | Przychód przypisany do rezerwacji |
+| `cancellation_fee` | Opłata za anulowanie |
+| `updated_at` | Data ostatniej aktualizacji rekordu |
+
+### 4.2. Channel Manager
+
+Dane `staging.cm_channels` są powiązane z PMS przez `reservation_id` i dostarczają informacji o kanale sprzedaży oraz prowizjach.
+
+Przed opracowaniem szczegółowego mapowania należy potwierdzić nazwy kolumn w aktualnym schemacie tabeli.
+
+### 4.3. Wstępne wnioski
+
+- `reservation_id` stanowi podstawę połączenia obu źródeł.
+- PMS jest głównym źródłem statusów, dat i kwot rezerwacji.
+- Channel Manager uzupełnia dane o kanał sprzedaży i prowizje.
+- W PMS nie potwierdzono osobnego pola daty anulowania. `updated_at` nie może automatycznie zastępować daty anulowania.
+- Dane źródłowe wymagają uzgodnienia z docelowymi wymiarami hurtowni przed implementacją `FactReservation`.
