@@ -313,7 +313,7 @@ Sposób obsługi brakujących powiązań (odrzucenie rekordu, zastosowanie rekor
 
 ### 9.5. Zależności implementacyjne
 
-Przed utworzeniem fizycznej tabeli `FactReservation` należy potwierdzić:
+Przed rozszerzeniem i zasileniem tabeli mart.fct_reservations należy potwierdzić:
 
 1. Struktury oraz klucze `DimDate`, `DimHotel`, `DimChannel`, `DimGuest` i `DimSegment`.
 2. Dostępność oczyszczonych danych PMS i Channel Managera.
@@ -326,7 +326,7 @@ Dokument przedstawia projekt logiczny relacji, który wymaga weryfikacji z aktua
 
 ### 10.1. Ziarno FactReservation
 
-Tabela `FactReservation` zachowuje ziarno jednego rekordu na `reservation_id`, niezależnie od liczby pokoi przypisanych do rezerwacji.
+Tabela mart.fct_reservations zachowuje ziarno jednego rekordu na reservation_bk, pochodzącego ze źródłowego reservation_id, niezależnie od liczby pokoi przypisanych do rezerwacji.
 
 Oznacza to, że:
 - Jedna rezerwacja wielopokojowa nadal jest liczona jako jedna rezerwacja.
@@ -577,7 +577,7 @@ Implementacja zostanie wykonana przez rozszerzenie istniejącej tabeli `mart.fct
 
 Przed przygotowaniem migracji SQL należy zweryfikować typy istniejących kolumn, ograniczenia oraz zależności z pozostałymi elementami modelu hurtowni.
 
-Zależność od DimDate: obecna definicja mart.dim_date wymaga wartości full_date DATE UNIQUE NOT NULL, dlatego nie umożliwia bezpośredniego dodania dwóch rekordów technicznych bez rzeczywistej daty. Przed wykorzystaniem kluczy 0 (UNKNOWN) i -1 (NOT_APPLICABLE) należy uzgodnić z właścicielem wymiaru modyfikację tej definicji oraz przygotowanie odpowiednich rekordów technicznych. Nie należy stosować fikcyjnych dat kalendarzowych jako zastępstwa brakujących informacji.
+**Zależność od DimDate:** obecna definicja `mart.dim_date` zawiera ograniczenie `full_date DATE UNIQUE NOT NULL`. Aby obsługiwać rekordy techniczne `0` (`UNKNOWN`) i `-1` (`NOT_APPLICABLE`) bez przypisywania im fikcyjnych dat kalendarzowych, należy uzgodnić zmianę modelu wymiaru, np. dopuszczenie `NULL` dla `full_date` w rekordach technicznych. Przed zasileniem tabeli faktów trzeba potwierdzić istnienie tych rekordów oraz poprawność powiązań kluczy obcych.
 
 ## 16. Plan testów akceptacyjnych
 
