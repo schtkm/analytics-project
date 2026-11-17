@@ -448,15 +448,16 @@ Reguła zostanie zweryfikowana z fizyczną implementacją `DimDate` przed zasile
 
 ### 14.1. Waluta danych
 
-Dane źródłowe PMS i Channel Managera nie zawierają jawnego kodu waluty.
+W ramach US-03-04 proponuje się przyjęcie **PLN (polski złoty)** jako wspólnej waluty bazowej syntetycznych danych PMS i Channel Managera.
 
-Przyjęto następujące zasady projektowe:
+Przyjęto następujące zasady:
 
-- Wszystkie kwoty w `mart.fct_reservations` muszą być wyrażone w jednej, udokumentowanej walucie.
-- Waluta zostanie potwierdzona na podstawie generatorów i ustaleń dotyczących danych syntetycznych.
-- Atrybut `currency_code` będzie przechowywał kod waluty zgodny z ISO 4217.
-- Do czasu potwierdzenia waluty nie przypisuje się arbitralnie kodu `PLN` ani `EUR`.
-- Ewentualne przeliczanie walut wymaga osobno określonych reguł oraz źródła kursów.
+- Wszystkie kwoty w `mart.fct_reservations` będą wyrażone w PLN.
+- Atrybut `currency_code` będzie przechowywał wartość `PLN`, zgodną z ISO 4217.
+- Kwoty `room_revenue`, `cancellation_fee` i `commission_amount` będą przechowywane jako `NUMERIC(18,2)`.
+- Nie przewiduje się przeliczania walut, ponieważ w przyjętym modelu syntetycznym stosowana będzie jedna waluta bazowa.
+- Waluta jest założeniem projektowym przypisanym do danych syntetycznych, a nie informacją dostarczaną bezpośrednio przez źródłowe rekordy.
+- Założenie wymaga akceptacji zespołu podczas Code Review oraz zachowania spójności z pozostałymi modelami finansowymi HotelGroup.
 
 ### 14.2. Interpretacja miar finansowych
 
