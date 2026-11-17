@@ -16,8 +16,8 @@ Zakres obejmuje sześć wymiarów podstawowych i dodatkowy DimSegment, atrybuty,
 - Region to województwo. Dodano jawne mapowania geograficzne.
 - Słownik typów: STANDARD, PREMIUM, APARTMENT. Wycofano przykładowe SUPERIOR i SUITE oraz domniemania wyposażenia.
 - Słownik segmentów: BUSINESS, LEISURE, FAMILY. Wycofano wcześniejsze pierwszeństwo GROUP. Źródłem segmentu jest rezerwacja.
-- DimChannel pozostaje pełnym projektem logicznym. W PMS nie ma danych o kanale; katalog kanałów wymaga przeglądu, a późniejsze zasilenie źródła.
-- Wszystkie zestawienia poniżej odpowiadają arkuszom XLSX tej samej aktualizacji.
+- DimChannel uwzględnia syntetyczne źródło Channel Manager (US-02-01). Dodano ogólny kanał DIRECT oraz mapowanie kodów BOOKING i EXPEDIA. W PMS nadal nie ma informacji o kanale sprzedaży.
+- Zestawienia tabelaryczne są zsynchronizowane z arkuszem XLSX
 
 ## Nazewnictwo, klucze i historia
 
@@ -49,7 +49,7 @@ Wszystkie 10 testów autora przeszło, ale dodatkowe kontrole wykazały problemy
 | DimHotel | Hotel sieci | HotelKey | HotelCode | pms_hotels.hotel_id → HotelCode (H001–H008) | Podstawowy |
 | DimRoomType | Wspólny typ pokoju | RoomTypeKey | RoomTypeCode | pms_rooms.room_type → STANDARD/PREMIUM/APARTMENT | Podstawowy |
 | DimRoom | Fizyczny pokój w hotelu | RoomKey | HotelCode + RoomCode | pms_rooms.room_id → RoomCode; hotel_id → HotelKey | Podstawowy |
-| DimChannel | Kanał sprzedaży | ChannelKey | ChannelCode | Projekt logiczny; brak pola kanału w PMS; przyszłe źródło do uzgodnienia | Podstawowy |
+| DimChannel | Kanał sprzedaży | ChannelKey | ChannelCode | Channel Manager: DIRECT, BOOKING, EXPEDIA; katalog pozostałych kanałów | Podstawowy |
 | DimGuest | Profil gościa bez historii | GuestKey | GuestBusinessId | PMS_SYNTH_V2: + pms_guests.guest_id; identyfikator profilu, bez danych kontaktowych | Podstawowy |
 | DimSegment | Segment rezerwacji | SegmentKey | SegmentCode | pms_reservations.guest_segment → BUSINESS/LEISURE/FAMILY | Uzupełniający |
 
@@ -121,12 +121,13 @@ Wszystkie 10 testów autora przeszło, ale dodatkowe kontrole wykazały problemy
 | DimSegment | Biznes | BUSINESS | Biznes | Segment pojedynczej rezerwacji; kategorie rozłączne według wartości źródłowej. | Obecne w kodzie |
 | DimSegment | Turystyczny | LEISURE | Turystyczny | Segment pojedynczej rezerwacji; kategorie rozłączne według wartości źródłowej. | Obecne w kodzie |
 | DimSegment | Rodzinny | FAMILY | Rodzinny | Segment pojedynczej rezerwacji; kategorie rozłączne według wartości źródłowej. | Obecne w kodzie |
+| DimChannel | Channel Manager: DIRECT | DIRECT | Sprzedaż bezpośrednia (bez określenia sposobu kontaktu) | DIRECT | Źródło syntetyczne US-02-01; mapowanie do zatwierdzenia |
 | DimChannel | Brak w PMS | DIRECT_WEB | Strona hotelu | DIRECT | Katalog projektowy; do przeglądu z zespołem |
 | DimChannel | Brak w PMS | DIRECT_PHONE | Telefon | DIRECT | Katalog projektowy; do przeglądu z zespołem |
 | DimChannel | Brak w PMS | DIRECT_EMAIL | E-mail | DIRECT | Katalog projektowy; do przeglądu z zespołem |
 | DimChannel | Brak w PMS | WALK_IN | Recepcja | DIRECT | Katalog projektowy; do przeglądu z zespołem |
-| DimChannel | Brak w PMS | BOOKING_COM | Booking.com | OTA | Katalog projektowy; do przeglądu z zespołem |
-| DimChannel | Brak w PMS | EXPEDIA | Expedia | OTA | Katalog projektowy; do przeglądu z zespołem |
+| DimChannel | Channel Manager: BOOKING | BOOKING_COM | Booking.com | OTA | Źródło syntetyczne US-02-01; mapowanie do zatwierdzenia |
+| DimChannel | Channel Manager: EXPEDIA | EXPEDIA | Expedia | OTA | Źródło syntetyczne US-02-01; mapowanie do zatwierdzenia |
 | DimChannel | Brak w PMS | OTA_OTHER | Inne OTA | OTA | Katalog projektowy; do przeglądu z zespołem |
 | DimChannel | Brak w PMS | TRAVEL_AGENCY | Biuro podróży | AGENCY | Katalog projektowy; do przeglądu z zespołem |
 | DimChannel | Brak w PMS | GDS | GDS | GDS | Katalog projektowy; do przeglądu z zespołem |
@@ -159,6 +160,9 @@ Wszystkie 10 testów autora przeszło, ale dodatkowe kontrole wykazały problemy
 | Pokój | pms_rooms | room_id | DimRoom.RoomCode | wartość room_id | ID globalne w zbiorze; dodatkowo hotel_id. |
 | Gość | pms_guests | guest_id | DimGuest.GuestBusinessId | PMS_SYNTH_V2:<guest_id> | Jeden profil globalny w zbiorze; nie scalać po e-mailu. |
 | Kanał | Brak | Brak | DimChannel.ChannelKey | 0 / UNKNOWN przy przyszłym zasileniu bez kanału | Nie przypisywać DIRECT ani OTA na podstawie segmentu. |
+| Kanał | Channel Manager (US-02-01) | DIRECT | DimChannel.ChannelCode | DIRECT | Brak rozróżnienia WEB/PHONE/EMAIL; nie przypisywać DIRECT_WEB. |
+| Kanał | Channel Manager (US-02-01) | BOOKING | DimChannel.ChannelCode | BOOKING_COM | Jawne mapowanie kodu platformy Booking.com. |
+| Kanał | Channel Manager (US-02-01) | EXPEDIA | DimChannel.ChannelCode | EXPEDIA | Bezpośrednie mapowanie kodu kanału. |
 
 ## Kontrakt źródeł
 
@@ -173,7 +177,7 @@ Wszystkie 10 testów autora przeszło, ale dodatkowe kontrole wykazały problemy
 | pms_stays | stay_id, reservation_id, guest_id, room_id, actual_check_in, actual_check_out | Powiązania przyszłej FactRoomNight | Dla W trakcie actual_check_out to data odcięcia, a nie faktyczny wyjazd. |
 | Konfiguracja integracji | SourceSystemCode=PMS_SYNTH_V2 | Przestrzeń nazw dla nowej wersji zbioru | Nie dopisywać nowego wygenerowanego zbioru jako przyrostu poprzedniej bazy na podstawie samych RES/G ID. |
 | Kalendarz | FullDate od 2023-01-01 do 2026-12-31 | DimDate i role dat | Zakres obejmuje wyprzedzenie rezerwacji i rok planowania; rozszerzać po profilowaniu nowych źródeł. |
-| Przyszła integracja kanału | reservation_id + channel_code oraz zakres instancji | Docelowo mapowanie DimChannel | Kontrakt projektowy, nie istniejące pola PMS. Maksymalnie jeden kanał pozyskania na rezerwację. |
+| Channel Manager (US-02-01) | reservation_id, channel_code, commission_rate, commission_amount | Powiązanie z PMS przez reservation_id; mapowanie do DimChannel | Syntetyczne źródło JSON, jeden kanał na rezerwację; wymaga kontroli unikalności i zgodności identyfikatorów. |
 
 ## Planowane fakty
 
@@ -196,7 +200,7 @@ Wszystkie 10 testów autora przeszło, ale dodatkowe kontrole wykazały problemy
 | FactReservation | DepartureDateKey | DimDate | DateKey | N:1 | Planowany wyjazd | Dokładnie jeden rekord wymiaru na FK, w tym rekord specjalny. |
 | FactReservation | CancellationDateKey | DimDate | DateKey | N:1 | Data anulowania; -1 dla nieanulowanej | Anulowana bez daty → 0; nieanulowana → -1. Nie używać updated_at jako daty anulacji. |
 | FactReservation | HotelKey | DimHotel | HotelKey | N:1 | Hotel rezerwacji | Dokładnie jeden rekord wymiaru na FK, w tym rekord specjalny. |
-| FactReservation | ChannelKey | DimChannel | ChannelKey | N:1 | Kanał rezerwacji | Brak kanału w PMS: 0 / UNKNOWN; mapowanie z dalszej integracji. Nie oznacza pełnej analizy kanałów. |
+| FactReservation | ChannelKey | DimChannel | ChannelKey | N:1 | Kanał rezerwacji | Kanał z Channel Managera (US-02-01) przez reservation_id; mapowanie DIRECT→DIRECT, BOOKING→BOOKING_COM, EXPEDIA→EXPEDIA. Brak lub nierozpoznany kanał → 0 / UNKNOWN i kontrola jakości. |
 | FactReservation | PrimaryGuestKey | DimGuest | GuestKey | N:1 | Gość główny; nie lista wszystkich gości | guest_id → profil PMS_SYNTH_V2; jeden wskazany gość, nie lista uczestników. |
 | FactReservation | SegmentKey | DimSegment | SegmentKey | N:1 | Segment tej rezerwacji | Mapowanie guest_segment rezerwacji; nie z bieżącego profilu gościa. |
 | FactRoomNight | StayDateKey | DimDate | DateKey | N:1 | Noc pobytu; dzień wyjazdu wyłączony | Dokładnie jeden rekord wymiaru na FK, w tym rekord specjalny. |
@@ -204,7 +208,7 @@ Wszystkie 10 testów autora przeszło, ale dodatkowe kontrole wykazały problemy
 | FactRoomNight | RoomKey | DimRoom | RoomKey | N:1 | Fizyczny pokój przypisany do nocy | RoomKey > 0 dla faktu o ziarnie pokój × noc. Nie scalać nieprzydzielonych rezerwacji pod RoomKey=-2. |
 | FactRoomNight | BookedRoomTypeKey | DimRoomType | RoomTypeKey | N:1 | Typ zamówiony | Brak typu zamówionego. Domyślnie UNKNOWN; utożsamienie z typem przydzielonym tylko po jawnym uzgodnieniu braku upgrade. |
 | FactRoomNight | OccupiedRoomTypeKey | DimRoomType | RoomTypeKey | N:1 | Typ fizycznego pokoju obowiązujący w nocy pobytu | Dokładnie jeden rekord wymiaru na FK, w tym rekord specjalny. |
-| FactRoomNight | ChannelKey | DimChannel | ChannelKey | N:1 | Kanał przypisany do rezerwacji | Brak kanału w PMS: 0 / UNKNOWN; mapowanie z dalszej integracji. Nie oznacza pełnej analizy kanałów. |
+| FactRoomNight | ChannelKey | DimChannel | ChannelKey | N:1 | Kanał przypisany do rezerwacji | Kanał dziedziczony z rezerwacji po mapowaniu Channel Managera; brak lub nierozpoznany kod → 0 / UNKNOWN i kontrola jakości. |
 | FactRoomNight | PrimaryGuestKey | DimGuest | GuestKey | N:1 | Gość główny pobytu | guest_id → profil PMS_SYNTH_V2; jeden wskazany gość, nie lista uczestników. |
 | FactRoomNight | SegmentKey | DimSegment | SegmentKey | N:1 | Segment rezerwacji obowiązujący dla tej pozycji | Mapowanie guest_segment rezerwacji; nie z bieżącego profilu gościa. |
 | FactRoomInventory | InventoryDateKey | DimDate | DateKey | N:1 | Data dostępności | Dokładnie jeden rekord wymiaru na FK, w tym rekord specjalny. |
@@ -228,7 +232,7 @@ Wszystkie 10 testów autora przeszło, ale dodatkowe kontrole wykazały problemy
 | C-04 | Hotel | HotelCode→CityCode→RegionCode→CountryCode; region oznacza województwo. |
 | C-05 | Źródło | PMS_SYNTH_V2 oznacza bieżącą wersję syntetycznego zbioru. Zmiana konfiguracji generatora może zmieniać przypisania kolejnych ID. |
 | C-06 | Gość | Bez imienia, nazwiska, e-maila i telefonu w DimGuest. guest_id pozwala na kontrolowane powiązanie, nie gwarantuje anonimowości. SCD2 osobno. |
-| C-07 | Kanał | Słownik i relacje zaprojektowane. W PMS brak kanału. UNKNOWN jest oznaczeniem braku, nie dowodem realizacji analiz kanałowych. |
+| C-07 | Kanał | PMS nie zawiera kanału sprzedaży. Dane Channel Managera z US-02-01 dostarczają kod kanału powiązany przez reservation_id. DIRECT→DIRECT, BOOKING→BOOKING_COM, EXPEDIA→EXPEDIA. Brak lub nierozpoznany kod→UNKNOWN (SK=0) i zgłoszenie w kontroli jakości; nie przypisywać automatycznie DIRECT. |
 | C-08 | Daty | Daty pobytu są lokalnymi datami; dzień wyjazdu nie jest nocą pobytu. Snapshot generatora 2026-01-01, niezależnie od daty uruchomienia. |
 | C-09 | Historia | Typ pokoju stały w tym zbiorze. Zmiana typu w kolejnych źródłach wymaga mapowania według daty; nie odtwarzać historii ze stanu bieżącego. |
 | C-10 | BI | Relacje N:1; role DimDate osobno. Nie tworzyć dwóch aktywnych ścieżek Hotel→Room→Fact i Hotel→Fact. |
@@ -272,7 +276,7 @@ Wszystkie 10 testów autora przeszło, ale dodatkowe kontrole wykazały problemy
 | --- | --- | --- | --- | --- |
 | U-01 | Struktura PMS i identyfikatory | Odczytano poprawiony kod, uruchomiono i sprawdzono schemat | US-03-03 / US-02-06 | Mapowania źródłowe udokumentowane. |
 | U-02 | Województwa i segmenty | Dostępne w poprawionym generatorze | Przegląd projektu przez zespół | Zastąpiono wcześniejsze przykłady. |
-| U-03 | Kanał sprzedaży | Brak w PMS; katalog projektowy i UNKNOWN opisane | EPIC-02 / autor źródła kanałów, przed zasileniem faktów | Nie blokuje samego projektu logicznego; akceptacja katalogu i planu źródła przy odbiorze. |
+| U-03 | Kanał sprzedaży | Dostępne syntetyczne źródło Channel Manager z US-02-01; przygotowano mapowanie DIRECT, BOOKING, EXPEDIA | US-03-03 / US-03-04; Code Review zespołu | Wymaga zatwierdzenia nowego kodu DIRECT w słowniku oraz uwzględnienia mapowania przy przyszłym zasileniu DimChannel. |
 | U-04 | Przegląd i odbiór | Brak potwierdzenia akceptacji w przekazanych materiałach | Zespół / PO | Wymagany do potwierdzenia uzgodnień; nie oznaczono automatycznie Done. |
 | U-05 | As-of, updated_at, pobyty w trakcie | Dodatkowe kontrole wykazały ograniczenia; V-09–V-11 | Autor generatora / ETL / US-03-05 | Nie zmieniają struktur wymiarów; do poprawy lub jawnej obsługi przed użyciem faktów. |
 | U-06 | OOO, waluta, data anulacji, typ zamówiony | Brak w źródle; bez zgadywania wartości | US-03-04/05 i ETL | Poza zasileniem wymiarów Sprintu 1. |
@@ -306,7 +310,7 @@ Wszystkie 10 testów autora przeszło, ale dodatkowe kontrole wykazały problemy
 
 ## Ocena kryteriów akceptacji i odbiór
 
-1. Co najmniej 5 wymiarów, w tym data i hotel, atrybuty, BK/SK oraz relacje: przygotowano 7 wymiarów; źródłowe mapowania PMS sprawdzono. Kanał pozostaje jawnym kontraktem projektowym do przeglądu, bez danych źródłowych.
+1. Co najmniej 5 wymiarów, w tym data i hotel, atrybuty, BK/SK oraz relacje: przygotowano 7 wymiarów; źródłowe mapowania PMS sprawdzono. DimChannel uwzględnia syntetyczne źródło Channel Manager (US-02-01) i mapowanie trzech kodów kanałów. Katalog wymaga zatwierdzenia przez zespół.
 2. Hotel → miasto → region bez utraty tożsamości: zapewniają HotelCode, CityCode i RegionCode; potwierdzono województwa w nowym źródle.
 3. Pokój fizyczny odrębny od typu: oddzielne DimRoom i DimRoomType oraz FK; potwierdzono odrębne pola room_id i room_type.
 
