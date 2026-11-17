@@ -1,0 +1,40 @@
+name: US-02-02 ETL validation
+
+on:
+  pull_request:
+  push:
+    branches: [main, 'feature/US-02-02*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_DB: hotelgroup_etl_test
+          POSTGRES_USER: etl_test
+          POSTGRES_PASSWORD: local_ci_test_only
+        ports:
+          - '5432:5432'
+        options: >-
+          --health-cmd "pg_isready -U etl_test -d hotelgroup_etl_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      ETL_TEST_DATABASE_URL: postgresql://etl_test:local_ci_test_only@localhost:5432/hotelgroup_etl_test
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install -r etl/requirements.txt
+      - run: python -m unittest discover -s tests -v
