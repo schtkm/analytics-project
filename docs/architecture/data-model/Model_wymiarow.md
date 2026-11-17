@@ -17,7 +17,7 @@ Zakres obejmuje sześć wymiarów podstawowych i dodatkowy DimSegment, atrybuty,
 - Słownik typów: STANDARD, PREMIUM, APARTMENT. Wycofano przykładowe SUPERIOR i SUITE oraz domniemania wyposażenia.
 - Słownik segmentów: BUSINESS, LEISURE, FAMILY. Wycofano wcześniejsze pierwszeństwo GROUP. Źródłem segmentu jest rezerwacja.
 - DimChannel uwzględnia syntetyczne źródło Channel Manager (US-02-01). Dodano ogólny kanał DIRECT oraz mapowanie kodów BOOKING i EXPEDIA. W PMS nadal nie ma informacji o kanale sprzedaży.
-- Zmiany dotyczące DimChannel wymagają synchronizacji z arkuszem XLSX przed zatwierdzeniem dokumentacji.
+- Zestawienia tabelaryczne są zsynchronizowane z arkuszem XLSX
 
 ## Nazewnictwo, klucze i historia
 
