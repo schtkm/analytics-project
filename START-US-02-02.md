@@ -1,0 +1,19 @@
+# US-02-02 — zacznij tutaj
+
+Paczka zawiera nową funkcjonalność do lokalnego projektu HotelGroup.
+Nie zmieniono GitHuba ani Twojej bazy PostgreSQL.
+
+1. Rozpakuj pliki do głównego katalogu projektu, zachowując strukturę katalogów.
+2. Otwórz **docs/US-02-02-README.md** — zawiera zasady i dokładne polecenia.
+3. Zainstaluj zależności z `etl/requirements.txt` i ustaw lokalne połączenie w `.env`.
+4. Uruchom `python -m etl.check_staging` — odczyt bez zmian w bazie.
+5. Potwierdź waluty źródeł. Przykładowa konfiguracja nie zakłada PLN automatycznie.
+6. Następnie wykonaj migrację i ETL według instrukcji.
+
+Weryfikacja: **27 testów zaliczonych**, migracja i zapis sprawdzone silnikiem
+PostgreSQL. **7 testów połączenia klient-serwer pozostaje do uruchomienia lokalnie.**
+Pełny opis: `docs/US-02-02-WYNIKI-TESTOW.md`.
+
+Istotne: migracja zmienia typy dat/kwot w staging na TEXT. Dane oczyszczone mają
+właściwe typy w nowych tabelach `core.clean_*`. Istniejący core i mart nie są nadpisywane.
+Plik CI jest przygotowany w paczce; nie został opublikowany ani wykonany na GitHubie.
