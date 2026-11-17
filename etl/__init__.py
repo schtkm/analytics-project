@@ -1,0 +1,1 @@
+"""HotelGroup ETL transformations."""
