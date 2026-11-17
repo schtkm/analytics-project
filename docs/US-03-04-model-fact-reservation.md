@@ -113,7 +113,7 @@ Nazwy kluczy zastępczych zachowują konwencję `_sk`. Identyfikator rezerwacji 
 
 **Data anulowania:** w źródle PMS nie występuje osobne pole daty anulowania. Przyjęto stosowanie kluczy technicznych `UNKNOWN (0)` dla anulacji bez znanej daty oraz `NOT_APPLICABLE (-1)` dla pozostałych rezerwacji. Szczegółowe zasady opisano w sekcji 13. Wymaga to potwierdzenia istnienia odpowiednich rekordów w `DimDate`.
 
-**Waluta:** dane PMS i Channel Managera nie zawierają kodu waluty. Przed implementacją należy ustalić walutę bazową i udokumentować ją zgodnie z zasadami opisanymi w sekcji 14.
+**Waluta** Zatwierdzono PLN (polski złoty) jako wspólną walutę bazową danych syntetycznych PMS i Channel Managera. Wszystkie kwoty w tabeli mart.fct_reservations będą wyrażone w PLN, a currency_code będzie przyjmować wartość PLN. Kwoty będą przechowywane jako NUMERIC(18,2). Dane źródłowe nie zawierają jawnego kodu waluty, dlatego zgodność tego założenia z generatorami zostanie zweryfikowana podczas integracji.
 
 **Klucze wymiarów:** przyjęto powiązania z pięcioma wymiarami: `DimDate`, `DimHotel`, `DimChannel`, `DimGuest` i `DimSegment`. Stosujemy nazewnictwo kluczy zastępczych `*_sk`, zgodne z istniejącym modelem `mart.fct_reservations`. Przed implementacją należy potwierdzić ich typy i relacje.
 
@@ -234,8 +234,7 @@ Miary będą przechowywane z dokładnością do dwóch miejsc po przecinku, w ty
 
 Dostępne pola źródłowe nie zawierają jawnego kodu waluty. W związku z tym:
 
-- Przed implementacją należy uzgodnić jedną walutę bazową danych syntetycznych.
-- Nie należy zakładać, że kwoty są wyrażone w PLN bez potwierdzenia tego założenia.
+- Zatwierdzoną walutą bazową danych syntetycznych jest PLN. Wszystkie miary finansowe w tabeli faktów będą wyrażone w PLN.
 - Wszystkie miary finansowe w tabeli faktów muszą być wyrażone w uzgodnionej walucie.
 - W projekcie logicznym przewiduje się atrybut `currency_code`, np. zgodny z ISO 4217.
 - Jeśli źródła będą wykorzystywać różne waluty, konieczne będzie zdefiniowanie zasad przeliczania i dokumentowania kursów.
@@ -252,7 +251,7 @@ Dostępne pola źródłowe nie zawierają jawnego kodu waluty. W związku z tym:
 
 Przed implementacją należy:
 
-1. Ustalić i udokumentować walutę bazową danych syntetycznych.
+1. Zweryfikować zgodność generatorów danych i procesu ETL z zatwierdzoną walutą PLN.
 2. Potwierdzić zgodność generatorów PMS i Channel Managera z regułami opisanymi w sekcjach 14.5 i 14.6.
 3. Potwierdzić przechowywanie `currency_code` bezpośrednio w `mart.fct_reservations`.
 4. Zweryfikować poprawność kwot podczas zasilania tabeli faktów.
@@ -381,7 +380,7 @@ Model zostanie uzupełniony o miary liczby rezerwacji i anulacji oraz kwoty przy
 
 Dane do tabeli faktów będą pochodzić z oczyszczonej warstwy `core`, zgodnie z architekturą `staging → core → mart`.
 
-**Przed implementacją fizyczną** należy potwierdzić zgodność struktur wymiarów, mapowania kanałów sprzedaży, walutę oraz dostępność danych o anulacjach.
+**Przed implementacją fizyczną** należy potwierdzić zgodność struktur wymiarów, mapowania kanałów sprzedaży oraz dostępność danych o anulacjach. W zakresie kwot finansowych obowiązuje zatwierdzona waluta PLN.
 
 Niniejsza decyzja stanowi propozycję implementacyjną US-03-04 podlegającą Code Review zespołu. Zmiany istniejącego schematu SQL będą realizowane w ramach osobnego commita po weryfikacji zależności.
 
@@ -448,7 +447,7 @@ Reguła zostanie zweryfikowana z fizyczną implementacją `DimDate` przed zasile
 
 ### 14.1. Waluta danych
 
-W ramach US-03-04 proponuje się przyjęcie **PLN (polski złoty)** jako wspólnej waluty bazowej syntetycznych danych PMS i Channel Managera.
+W ramach US-03-04 zatwierdzono PLN (polski złoty) jako wspólną walutę bazową syntetycznych danych PMS i Channel Managera. Decyzja obowiązuje w modelowaniu, implementacji ETL oraz raportowaniu finansowym HotelGroup.
 
 Przyjęto następujące zasady:
 
@@ -480,7 +479,7 @@ Kwoty należy przechowywać jako wartości dziesiętne, np. `NUMERIC(18,2)`.
 
 ### 14.4. Warunki zatwierdzenia
 
-Przed implementacją należy potwierdzić walutę syntetycznych danych PMS i Channel Managera.
+Waluta PLN została zatwierdzona jako waluta bazowa danych syntetycznych PMS i Channel Managera. Do zweryfikowania pozostaje zgodność generatorów oraz implementacji ETL z przyjętą decyzją.
 
 Reguły generowania i interpretacji kwot zostały opisane w sekcjach 14.5 i 14.6. Ich zgodność z kodem generatorów oraz poprawność odwzorowania w tabeli faktów zostaną zweryfikowane podczas implementacji i testów.
 
