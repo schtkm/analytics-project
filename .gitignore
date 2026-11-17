@@ -1,0 +1,14 @@
+__pycache__/
+*.pyc
+
+# Lokalne bazy danych i konfiguracja
+*.db
+*.db-journal
+.env
+.venv/
+
+# Wygenerowane dane Channel Managera
+/database/generator/channel_manager.json
+
+# Wygenerowane dane finansowe
+/database/generator/financial_data.csv
