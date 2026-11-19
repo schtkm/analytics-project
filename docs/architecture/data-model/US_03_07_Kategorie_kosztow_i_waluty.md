@@ -1,4 +1,4 @@
-# US-03-07 | Ujednolicenie kategorii kosztów i zasad kwot finansowych
+g# US-03-07 | Ujednolicenie kategorii kosztów i zasad kwot finansowych
 
 **Projekt:** HotelGroup — hurtownia danych i analityka hotelarska  
 **Epika:** EPIC-03 — Hurtownia i modelowanie danych  
@@ -74,7 +74,7 @@ To **katalog roboczych kodów i definicji**, przygotowany w ramach przyjętej za
 |---|---|---|---|
 | H001 | `PENSJE` | `PERSONNEL` | Jedna wspólna kategoria |
 | H002 | `WYNAGRODZENIA` | `PERSONNEL` | Jedna wspólna kategoria |
-| H001 | `PRĄD` | `UTILITIES` | Jedna wspólna kategoria |
+| H001 | `PRAD` | `UTILITIES` | Jedna wspólna kategoria |
 | H002 | `ENERGIA` | `UTILITIES` | Jedna wspólna kategoria |
 | H003 | `NIEZNANY_KOD` | — | Brak mapowania — wymaga decyzji |
 
@@ -178,7 +178,7 @@ Test demonstracyjny z danymi finansowymi **trzech syntetycznych hoteli** zakońc
 
 Transakcja testowa zakończyła się `ROLLBACK`, więc **dane demonstracyjne nie zostały zachowane**. Sprawdzono również utworzenie tabel oraz uruchomiono zapytania walidacyjne bez błędów SQL. Wyniki te potwierdzają działanie mechanizmu na danych testowych, nie są kontrolą rzeczywistych kosztów ani przeliczania walut obcych.
 
-Plik `22_us_03_07_demo_test.sql` uruchamia **testy na danych sztucznych** w transakcji i kończy je `ROLLBACK`, dzięki czemu nie zostawia testowych rekordów w słowniku. Plik `21_us_03_07_validation_queries.sql` zawiera kontrole dla tabeli finansowej i polityk walutowych. Testy opisane powyżej zostały wykonane w lokalnym PostgreSQL. Dodatkowy skrypt zapisujący dane referencyjne `23_us_03_07_seed_dictionary.sql` wymaga osobnego uruchomienia i kontroli; nie należy traktować go jako już wykonanego.
+Plik `22_us_03_07_demo_test.sql` uruchamia **testy na danych sztucznych** w transakcji i kończy je `ROLLBACK`, dzięki czemu nie zostawia testowych rekordów w słowniku. Plik `21_us_03_07_validation_queries.sql` zawiera kontrole dla tabeli finansowej i polityk walutowych. Testy opisane powyżej zostały wykonane w lokalnym PostgreSQL. Skrypt 23_us_03_07_seed_dictionary.sql został pomyślnie wykonany w lokalnej bazie PostgreSQL hotelgroup_dw (COMMIT). Trwale zapisano 9 kategorii kosztowych i 5 przykładowych mapowań DRAFT. Wyniki potwierdzono skryptem 24_us_03_07_verify_seed.sql
 
 ## 8. Powiązanie z wymaganiami
 
@@ -215,7 +215,7 @@ Plik `22_us_03_07_demo_test.sql` uruchamia **testy na danych sztucznych** w tran
 | Przygotować struktury SQL | Wykonano: DDL i test demonstracyjny uruchomiono lokalnie. |
 | Zdefiniować wykrywanie błędnych mapowań | Wykonano i pozytywnie przetestowano na danych syntetycznych. |
 | Przetestować mapowanie danych różnych hoteli | Test trzech hoteli syntetycznych zaliczony; weryfikacja danych docelowych pozostaje otwarta. |
-| Udokumentować zasady i zapisać zmiany w Git | Dokumentacja i wcześniejsze skrypty dodane do Pull Requesta. Uzupełnienie o wersję polityki i trwały seed wymaga kolejnego commitu na tej samej gałęzi. |
+| Udokumentować zasady i zapisać zmiany w Git | Wykonano: dokumentacja, struktury SQL, trwały zapis słownika oraz skrypty testowe zostały dodane do Pull Requesta #58. Zmiany oczekują na przegląd i zatwierdzenie przez zespół. |
 
 ## 11. Zasady dalszego wykorzystania
 
