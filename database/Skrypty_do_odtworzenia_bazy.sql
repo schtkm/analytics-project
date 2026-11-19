@@ -91,22 +91,6 @@ CREATE TABLE staging.fin_budgets_costs (
     _inserted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- CORE: Ujednolicone dane referencyjne
-CREATE TABLE core.hotels (
-    hotel_id VARCHAR(50) PRIMARY KEY,
-    hotel_name VARCHAR(255) NOT NULL,
-    city VARCHAR(100),
-    region VARCHAR(100),
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE core.guests (
-    guest_id VARCHAR(50) PRIMARY KEY,
-    first_name VARCHAR(100),
-    last_name VARCHAR(100) NOT NULL,
-    email VARCHAR(255),
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
 
 -- ==============================================================================
 -- 3. CORE (Warstwa centralna - wymuszona integralność i czystość danych)
