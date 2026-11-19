@@ -3,3 +3,5 @@ SQLAlchemy==2.1.8
 psycopg2-binary==2.9.13
 Faker==40.54.0
 python-dotenv==1.2.4
+psycopg[binary]==3.3.9
+tzdata==2026.6
