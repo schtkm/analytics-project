@@ -6,6 +6,8 @@ __pycache__/
 *.db-journal
 .env
 .venv/
+.env.test
+.env.backup
 
 # Wygenerowane dane Channel Managera
 /database/generator/channel_manager.json
