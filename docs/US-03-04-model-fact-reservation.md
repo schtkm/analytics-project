@@ -608,6 +608,17 @@ Testy zostaną wykonane po utworzeniu i zasileniu tabeli `mart.fct_reservations`
 
 ### 16.2. Status testów
 
-Wszystkie testy T01–T12 mają obecnie status **NOT RUN**.
+W dniu 20.11.2026 przeprowadzono lokalne zasilenie i weryfikację tabeli `mart.fct_reservations` w PostgreSQL 18.
 
-Weryfikacja liczebności i spójności danych źródłowych wykonana w US-02-01 nie zastępuje testów docelowej tabeli `mart.fct_reservations`.
+**Wyniki:**
+- Załadowano 140 847 rezerwacji, w tym 13 903 anulacje.
+- Potwierdzono 140 847 unikalnych identyfikatorów `reservation_bk` oraz brak duplikatów po powiązaniu źródeł z wymiarami.
+- Zweryfikowano poprawność pięciu statusów analitycznych oraz liczników rezerwacji i anulacji.
+- Wszystkie rekordy mają poprawne powiązania z wymiarami i walutę `PLN`.
+- Potwierdzono zgodność trzech sum finansowych z zaakceptowanymi danymi źródłowymi.
+- Zakres dat rezerwacji: 03.10.2023–26.06.2026 (ponad 24 miesiące).
+- Proces ETL US-02-02 zaakceptował 140 847 z 140 875 źródłowych rezerwacji; 28 odrzucień zostało ujętych w raporcie ETL.
+
+**Status:** testy liczebności, unikalności, mapowania statusów, liczników, powiązań i kwot — PASS. Test ponownego zasilenia tabeli faktów oraz szczegółowe testy dat anulowania wymagają osobnego potwierdzenia.
+
+Weryfikację przeprowadzono na lokalnej bazie `hotelgroup_dw`. Wyniki nie stanowią potwierdzenia wdrożenia na pozostałych środowiskach zespołu.
