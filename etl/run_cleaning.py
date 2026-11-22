@@ -143,7 +143,14 @@ def main():
             return 0
         result = run(conn, config)
         print(json_text(result))
-        return 2 if result['status'] == 'blocked' else 0
+        if result['status'] == 'blocked':
+            return 2
+
+        from tests.test_us_02_03_data_quality import run_data_quality_checks
+        if not run_data_quality_checks(conn):
+            print('Data quality checks (US-02-03) failed. Propagation halted.', file=sys.stderr)
+            return 2
+        return 0
 
 if __name__ == '__main__':
     try:
