@@ -142,14 +142,32 @@ def main():
             print('Migration completed. Run again without --migrate to transform staging.')
             return 0
         result = run(conn, config)
-        print(json_text(result))
         if result['status'] == 'blocked':
+            print(json_text(result))
             return 2
 
-        from tests.test_us_02_03_data_quality import run_data_quality_checks
-        if not run_data_quality_checks(conn):
+        from tests.test_us_02_03_data_quality import evaluate_data_quality_checks
+        dq_outcome = evaluate_data_quality_checks(conn=conn, stage='core')
+        result['data_quality'] = {
+            'stage': dq_outcome['stage'],
+            'passed': dq_outcome['passed'],
+            'failed_rules': dq_outcome['failed_rules'],
+        }
+        if not dq_outcome['passed']:
+            result['status'] = 'blocked'
+            result['report']['_dq_failed_rules'] = dq_outcome['failed_rules']
+            with conn.transaction():
+                conn.execute(
+                    """UPDATE core.etl_runs
+                       SET status = 'blocked', finished_at = clock_timestamp(), report = %s
+                       WHERE run_id = %s""",
+                    (jsonb(result['report']), uuid.UUID(result['run_id'])),
+                )
+            print(json_text(result))
             print('Data quality checks (US-02-03) failed. Propagation halted.', file=sys.stderr)
             return 2
+
+        print(json_text(result))
         return 0
 
 if __name__ == '__main__':
