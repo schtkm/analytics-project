@@ -1,0 +1,11 @@
+[Unit]
+Description=HotelGroup daily ETL and quality checks
+
+[Service]
+Type=oneshot
+WorkingDirectory=%h/.local/share/hotelgroup-etl
+EnvironmentFile=-%h/.config/hotelgroup-etl/alerts.env
+ExecStart=%h/.local/share/hotelgroup-etl/.venv/bin/python -u ops/us-02-05/pipeline.py
+StandardOutput=journal
+StandardError=journal
+UMask=0077
