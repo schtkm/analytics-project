@@ -150,3 +150,4 @@ def generate_financial_data():
 
 if __name__ == "__main__":
     generate_financial_data()
+    
