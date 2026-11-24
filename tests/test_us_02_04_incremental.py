@@ -35,9 +35,11 @@ def db_conn():
             "SELECT current_database()"
         ).fetchone()[0]
 
-        if database_name != "hotelgroup_dw":
-            pytest.fail("Tests require a dedicated test database: hotelgroup_dw")
-
+        if database_name not in ("hotelgroup_dw_test", "hotelgroup_etl_test"):
+            pytest.fail(
+                "Tests require a dedicated test database: "
+                "hotelgroup_dw_test or hotelgroup_etl_test"
+            )
         conn.commit()
 
         # Odtworzenie struktury testowej niezaleznie od poprzednich testow.
