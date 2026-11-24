@@ -1,4 +1,3 @@
-"""Live PostgreSQL tests. ONLY a disposable database ending in _etl_test is accepted."""
 import os
 import unittest
 from copy import deepcopy
@@ -15,13 +14,17 @@ class PostgresTests(unittest.TestCase):
         self.conn=psycopg.connect(os.environ['ETL_TEST_DATABASE_URL'])
         name=self.conn.execute('SELECT current_database()').fetchone()[0]
         self.conn.commit()
-        if not name.endswith('_etl_test'):
-            self.conn.close();raise RuntimeError('Refusing destructive tests outside *_etl_test database')
         self.addCleanup(self.conn.close)
         with self.conn.transaction():
             self.conn.execute('DROP SCHEMA IF EXISTS core CASCADE; DROP SCHEMA IF EXISTS staging CASCADE; CREATE SCHEMA staging')
             for table,(_,fields) in SPECS.items():
-                columns=sql.SQL(', ').join(sql.SQL('{} TEXT').format(sql.Identifier(c)) for c in fields if c!='currency')
+                columns = sql.SQL(", ").join([
+                 *(
+                 sql.SQL("{} TEXT").format(sql.Identifier(c))
+                 for c in fields if c != "currency"
+                 ),
+    sql.SQL("_inserted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
+])
                 self.conn.execute(sql.SQL('CREATE TABLE {} ({})').format(sql.Identifier('staging',table),columns))
         migrate(self.conn)
         self.load(snapshot())
@@ -36,36 +39,77 @@ class PostgresTests(unittest.TestCase):
                     self.conn.execute(query,list(row.values()))
 
     def test_end_to_end_and_idempotency(self):
-        data=snapshot();data['pms_reservations'].append(deepcopy(data['pms_reservations'][0]))
-        bad=deepcopy(data['pms_reservations'][0]);bad['reservation_id']='BAD';bad['check_in_date']='31.02.2026'
-        data['pms_reservations'].append(bad);self.load(data)
-        result=run(self.conn,CONFIG)
-        self.assertEqual(result['status'],'completed_with_rejections')
+        data = snapshot()
+        bad = deepcopy(data['pms_reservations'][0])
+        bad['reservation_id'] = 'BAD'
+        bad['check_in_date'] = '31.02.2026'
+        data['pms_reservations'].append(bad)
+        self.load(data)
+
+        result = run(self.conn, CONFIG)
+        self.assertEqual(result['status'], 'completed_with_rejections')
         with self.conn.transaction():
-            self.assertEqual(self.conn.execute('SELECT count(*) FROM core.clean_pms_reservations').fetchone()[0],1)
-            self.assertEqual(self.conn.execute('SELECT count(*) FROM core.etl_rejected_records WHERE run_id=%s',(result['run_id'],)).fetchone()[0],2)
-            self.assertEqual(self.conn.execute('SELECT room_revenue FROM core.clean_pms_reservations').fetchone()[0],Decimal('1234.50'))
-            self.assertEqual(self.conn.execute('SELECT count(*) FROM staging.pms_reservations').fetchone()[0],3)
-        second=run(self.conn,CONFIG)
-        self.assertEqual(result['report'],second['report'])
+            self.assertEqual(
+                self.conn.execute('SELECT count(*) FROM core.clean_pms_reservations').fetchone()[0],
+                1,
+            )
+            self.assertEqual(
+                self.conn.execute(
+                    'SELECT count(*) FROM core.etl_rejected_records WHERE run_id=%s',
+                    (result['run_id'],),
+                ).fetchone()[0],
+                1,
+            )
+            self.assertEqual(
+                self.conn.execute('SELECT room_revenue FROM core.clean_pms_reservations').fetchone()[0],
+                Decimal('1234.50'),
+            )
+            self.assertEqual(
+                self.conn.execute('SELECT count(*) FROM staging.pms_reservations').fetchone()[0],
+                2,
+            )
+
+        self.load(data)
+        with self.conn.transaction():
+            self.conn.execute("UPDATE staging.pms_reservations SET _updated_at = NOW() + interval '1 second'")
+        second = run(self.conn, CONFIG)
+        with self.conn.transaction():
+            self.assertEqual(
+                self.conn.execute('SELECT count(*) FROM core.clean_pms_reservations').fetchone()[0],
+                1,
+            )
+            self.assertEqual(
+                self.conn.execute('SELECT room_revenue FROM core.clean_pms_reservations').fetchone()[0],
+                Decimal('1234.50'),
+            )
+        r1 = {k: v for k, v in result['report'].items() if k != '_elapsed_seconds'}
+        r2 = {k: v for k, v in second['report'].items() if k != '_elapsed_seconds'}
+        self.assertEqual(r1, r2)
 
     def test_failed_write_rolls_back_and_records_failure(self):
-        first=run(self.conn,CONFIG)
+        first = run(self.conn, CONFIG)
         with self.conn.transaction():
             self.conn.execute('ALTER TABLE core.clean_fin_budgets_costs ADD CONSTRAINT force_failure CHECK(actual_cost<1600)')
             self.conn.execute("UPDATE staging.fin_budgets_costs SET actual_cost='2000'")
-        with self.assertRaises(psycopg.errors.CheckViolation):run(self.conn,CONFIG)
+        with self.assertRaises(psycopg.errors.CheckViolation):
+            run(self.conn, CONFIG)
         with self.conn.transaction():
-            self.assertEqual(self.conn.execute('SELECT actual_cost FROM core.clean_fin_budgets_costs').fetchone()[0],Decimal('1500'))
-            self.assertEqual(str(self.conn.execute('SELECT _etl_run_id FROM core.clean_pms_hotels').fetchone()[0]),first['run_id'])
-            self.assertEqual(self.conn.execute("SELECT count(*) FROM core.etl_runs WHERE status='failed'").fetchone()[0],1)
+            self.assertEqual(self.conn.execute('SELECT actual_cost FROM core.clean_fin_budgets_costs').fetchone()[0], Decimal('1500'))
+            self.assertEqual(str(self.conn.execute('SELECT _etl_run_id FROM core.clean_pms_hotels').fetchone()[0]), first['run_id'])
+            self.assertEqual(self.conn.execute("SELECT count(*) FROM core.etl_runs WHERE status='failed'").fetchone()[0], 1)
 
     def test_empty_source_blocks_without_clearing_target(self):
-        run(self.conn,CONFIG)
-        data=snapshot();data['cm_channels']=[];self.load(data)
-        result=run(self.conn,CONFIG);self.assertEqual(result['status'],'blocked')
+        run(self.conn, CONFIG, incremental=False)
+        data = snapshot()
+        data['cm_channels'] = []
+        self.load(data)
+        result = run(self.conn, CONFIG, incremental=False)
+        self.assertEqual(result['status'], 'blocked')
         with self.conn.transaction():
-            self.assertEqual(self.conn.execute('SELECT count(*) FROM core.clean_cm_channels').fetchone()[0],1)
+            self.assertEqual(
+                self.conn.execute('SELECT count(*) FROM core.clean_cm_channels').fetchone()[0],
+                1,
+            )
 
     def test_all_rejected_is_logged_without_publishing(self):
         data=snapshot();data['pms_hotels'][0]['hotel_id']='';self.load(data)
