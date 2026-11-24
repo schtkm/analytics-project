@@ -161,15 +161,15 @@ def run(conn, config, incremental: bool = True):
                     if incremental:
                         cur.execute(
                             sql.SQL(
-                                'SELECT *, COALESCE(_updated_at, _inserted_at) AS _wm_ts '
-                                'FROM {} WHERE COALESCE(_updated_at, _inserted_at) > %s ORDER BY ctid'
+                                'SELECT *, _updated_at AS _wm_ts '
+                                'FROM {} WHERE _updated_at > %s ORDER BY ctid'
                             ).format(sql.Identifier('staging', table)),
                             (last_wm,),
                         )
                     else:
                         cur.execute(
                             sql.SQL(
-                                'SELECT *, COALESCE(_updated_at, _inserted_at) AS _wm_ts '
+                                'SELECT *, _updated_at AS _wm_ts '
                                 'FROM {} ORDER BY ctid'
                             ).format(sql.Identifier('staging', table))
                         )
