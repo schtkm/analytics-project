@@ -18,7 +18,13 @@ class PostgresTests(unittest.TestCase):
         with self.conn.transaction():
             self.conn.execute('DROP SCHEMA IF EXISTS core CASCADE; DROP SCHEMA IF EXISTS staging CASCADE; CREATE SCHEMA staging')
             for table,(_,fields) in SPECS.items():
-                columns=sql.SQL(', ').join(sql.SQL('{} TEXT').format(sql.Identifier(c)) for c in fields if c!='currency')
+                columns = sql.SQL(", ").join([
+                 *(
+                 sql.SQL("{} TEXT").format(sql.Identifier(c))
+                 for c in fields if c != "currency"
+                 ),
+    sql.SQL("_inserted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
+])
                 self.conn.execute(sql.SQL('CREATE TABLE {} ({})').format(sql.Identifier('staging',table),columns))
         migrate(self.conn)
         self.load(snapshot())
