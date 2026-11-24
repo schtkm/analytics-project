@@ -4,6 +4,7 @@ import random
 from faker import Faker
 from datetime import datetime, timedelta
 
+
 # 1. KONFIGURACJA
 fake = Faker('pl_PL')
 SEED = 42
