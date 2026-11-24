@@ -18,15 +18,29 @@ w głównym katalogu repozytorium.
 Strategia: FULL REFRESH (nie jest to ładowanie przyrostowe).
 """
 
+from datetime import datetime
 import json
 import logging
 import os
 from pathlib import Path
+import sys
+import time
+import uuid
 
 from dotenv import load_dotenv
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine import URL
 
+PROJECT_ROOT = Path(__file__).resolve().parents[3]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+from etl.incremental import (
+    compute_row_hash,
+    ensure_watermark_table_exists,
+    update_watermark_sa,
+    upsert_records_sa,
+)
 
 # ============================================================
 # 1. KONFIGURACJA
@@ -160,65 +174,45 @@ def read_channel_data():
 # ============================================================
 
 def load_channel_manager():
-
+    started = time.perf_counter()
+    run_id = str(uuid.uuid4())
     records = read_channel_data()
+    for rec in records:
+        rec["row_hash"] = compute_row_hash(rec)
+
     engine = create_engine(get_postgres_url(), pool_pre_ping=True)
 
     try:
         with engine.begin() as connection:
-
-            # Sprawdzenie wymaganych tabel.
-            for table_name in (
-                "staging.cm_channels",
-                "staging.pms_reservations",
-            ):
+            for table_name in ("staging.cm_channels", "staging.pms_reservations"):
                 exists = connection.execute(
                     text("SELECT to_regclass(:name)"),
                     {"name": table_name},
                 ).scalar_one()
-
                 if exists is None:
-                    raise ValueError(
-                        f"Brak tabeli PostgreSQL: {table_name}"
-                    )
+                    raise ValueError(f"Brak tabeli PostgreSQL: {table_name}")
 
-            # Ponowne uruchomienie nie tworzy duplikatów.
-            connection.execute(
-                text("DELETE FROM staging.cm_channels")
+            ensure_watermark_table_exists(connection)
+
+            upserted_count = upsert_records_sa(
+                pg_conn=connection,
+                schema="staging",
+                table="cm_channels",
+                records=records,
+                business_cols=[
+                    "reservation_id",
+                    "channel_code",
+                    "commission_rate",
+                    "commission_amount",
+                ],
+                conflict_cols=["reservation_id"],
+                chunk_size=CHUNK_SIZE,
             )
 
-            insert_query = text("""
-                INSERT INTO staging.cm_channels (
-                    reservation_id,
-                    channel_code,
-                    commission_rate,
-                    commission_amount
-                )
-                VALUES (
-                    :reservation_id,
-                    :channel_code,
-                    :commission_rate,
-                    :commission_amount
-                )
-            """)
-
-            # Ładowanie partiami.
-            for start in range(0, len(records), CHUNK_SIZE):
-
-                chunk = records[start:start + CHUNK_SIZE]
-                connection.execute(insert_query, chunk)
-
-            loaded_count = connection.execute(
+            total_count = connection.execute(
                 text("SELECT COUNT(*) FROM staging.cm_channels")
             ).scalar_one()
 
-            if loaded_count != len(records):
-                raise ValueError(
-                    "Niezgodność liczby rekordów: "
-                    f"JSON={len(records)}, PostgreSQL={loaded_count}"
-                )
-
-            # Kontrola powiązania Channel Manager -> PMS.
             missing_count = connection.execute(text("""
                 SELECT COUNT(*)
                 FROM staging.cm_channels cm
@@ -229,24 +223,23 @@ def load_channel_manager():
 
             if missing_count != 0:
                 raise ValueError(
-                    f"Brak powiązania z PMS dla "
-                    f"{missing_count} rekordów."
+                    f"Brak powiązania z PMS dla {missing_count} rekordów."
                 )
 
-            logger.info(
-                "Poprawnie załadowano %s rekordów.",
-                loaded_count,
+            update_watermark_sa(
+                pg_conn=connection,
+                source_system="channel_manager",
+                table_name="cm_channels",
+                new_watermark_ts=datetime.now(),
+                rows_extracted=len(records),
+                rows_upserted=upserted_count,
+                run_id=run_id,
             )
 
-            logger.info(
-                "Wszystkie reservation_id powiązano z PMS."
-            )
-
-        # Zatwierdzenie transakcji następuje tutaj.
-        print("\nIMPORT CHANNEL MANAGERA ZAKOŃCZONY")
-        print(f"JSON: {len(records)}")
-        print(f"PostgreSQL: {loaded_count}")
-        print(f"Brakujące powiązania PMS: {missing_count}")
+        elapsed = time.perf_counter() - started
+        print("\nPRZYROSTOWY IMPORT CHANNEL MANAGERA ZAKOŃCZONY")
+        print(f"Odczytano JSON: {len(records)} | Zaktualizowano/dodano (UPSERT): {upserted_count}")
+        print(f"Razem w staging.cm_channels: {total_count} | Czas: {elapsed:.3f} s")
 
     finally:
         engine.dispose()

@@ -17,15 +17,29 @@ Strategia: FULL REFRESH, bez transformacji biznesowych.
 """
 
 import csv
+from datetime import datetime
+from decimal import Decimal, InvalidOperation
 import logging
 import os
-from decimal import Decimal, InvalidOperation
 from pathlib import Path
+import sys
+import time
+import uuid
 
 from dotenv import load_dotenv
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine import URL
 
+PROJECT_ROOT = Path(__file__).resolve().parents[3]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+from etl.incremental import (
+    compute_row_hash,
+    ensure_watermark_table_exists,
+    update_watermark_sa,
+    upsert_records_sa,
+)
 
 # ============================================================
 # 1. KONFIGURACJA
@@ -195,75 +209,45 @@ def read_financial_data():
 # ============================================================
 
 def load_financial_data():
-
+    started = time.perf_counter()
+    run_id = str(uuid.uuid4())
     records = read_financial_data()
+    for rec in records:
+        rec["row_hash"] = compute_row_hash(rec)
 
-    engine = create_engine(
-        get_postgres_url(),
-        pool_pre_ping=True,
-    )
+    engine = create_engine(get_postgres_url(), pool_pre_ping=True)
 
     try:
         with engine.begin() as connection:
-
-            for table_name in (
-                "staging.fin_budgets_costs",
-                "staging.pms_hotels",
-            ):
+            for table_name in ("staging.fin_budgets_costs", "staging.pms_hotels"):
                 exists = connection.execute(
                     text("SELECT to_regclass(:name)"),
                     {"name": table_name},
                 ).scalar_one()
-
                 if exists is None:
-                    raise ValueError(
-                        f"Brak tabeli: {table_name}"
-                    )
+                    raise ValueError(f"Brak tabeli: {table_name}")
 
-            # Usunięcie danych i ponowne ładowanie
-            # odbywają się w jednej transakcji.
-            connection.execute(
-                text("DELETE FROM staging.fin_budgets_costs")
+            ensure_watermark_table_exists(connection)
+
+            upserted_count = upsert_records_sa(
+                pg_conn=connection,
+                schema="staging",
+                table="fin_budgets_costs",
+                records=records,
+                business_cols=[
+                    "hotel_id",
+                    "month_id",
+                    "cost_category",
+                    "budget_amount",
+                    "actual_cost",
+                ],
+                conflict_cols=["hotel_id", "month_id", "cost_category"],
+                chunk_size=CHUNK_SIZE,
             )
 
-            insert_query = text("""
-                INSERT INTO staging.fin_budgets_costs (
-                    hotel_id,
-                    month_id,
-                    cost_category,
-                    budget_amount,
-                    actual_cost
-                )
-                VALUES (
-                    :hotel_id,
-                    :month_id,
-                    :cost_category,
-                    :budget_amount,
-                    :actual_cost
-                )
-            """)
-
-            for start in range(0, len(records), CHUNK_SIZE):
-
-                chunk = records[start:start + CHUNK_SIZE]
-
-                connection.execute(
-                    insert_query,
-                    chunk,
-                )
-
-            loaded_count = connection.execute(
-                text("""
-                    SELECT COUNT(*)
-                    FROM staging.fin_budgets_costs
-                """)
+            total_count = connection.execute(
+                text("SELECT COUNT(*) FROM staging.fin_budgets_costs")
             ).scalar_one()
-
-            if loaded_count != len(records):
-                raise ValueError(
-                    "Niezgodność liczby rekordów: "
-                    f"CSV={len(records)}, PostgreSQL={loaded_count}"
-                )
 
             missing_hotels = connection.execute(text("""
                 SELECT COUNT(*)
@@ -274,19 +258,22 @@ def load_financial_data():
             """)).scalar_one()
 
             if missing_hotels != 0:
-                raise ValueError(
-                    f"Nieznane identyfikatory hoteli: {missing_hotels}"
-                )
+                raise ValueError(f"Nieznane identyfikatory hoteli: {missing_hotels}")
 
-            logger.info(
-                "Załadowano %s rekordów finansowych.",
-                loaded_count,
+            update_watermark_sa(
+                pg_conn=connection,
+                source_system="financial",
+                table_name="fin_budgets_costs",
+                new_watermark_ts=datetime.now(),
+                rows_extracted=len(records),
+                rows_upserted=upserted_count,
+                run_id=run_id,
             )
 
-        print("\nIMPORT DANYCH FINANSOWYCH ZAKOŃCZONY")
-        print(f"CSV: {len(records)}")
-        print(f"PostgreSQL: {loaded_count}")
-        print(f"Nieznane hotele: {missing_hotels}")
+        elapsed = time.perf_counter() - started
+        print("\nPRZYROSTOWY IMPORT DANYCH FINANSOWYCH ZAKOŃCZONY")
+        print(f"Odczytano CSV: {len(records)} | Zaktualizowano/dodano (UPSERT): {upserted_count}")
+        print(f"Razem w staging.fin_budgets_costs: {total_count} | Czas: {elapsed:.3f} s")
 
     finally:
         engine.dispose()
