@@ -320,13 +320,19 @@ def evaluate_data_quality_checks(conn=None, stage: str = "all") -> dict:
                     "scope": "mart",
                     "checks": [
                         (
-                            has_clean_res and has_mart_rn,
-                            "Brak lub pusta tabela mart.fct_room_night lub core.clean_pms_reservations",
+                            has_clean_res and has_clean_stays and has_mart_rn,
+                            "Brak lub pusta tabela mart.fct_room_night, core.clean_pms_reservations lub core.clean_pms_stays",
                             """
                             WITH rev_core AS (
-                                SELECT COALESCE(SUM(room_revenue), 0) AS total_rev
-                                FROM core.clean_pms_reservations
-                                WHERE status IN ('Zakończona', 'W trakcie')
+                                SELECT COALESCE(SUM(r.room_revenue), 0) AS total_rev
+                                FROM core.clean_pms_reservations r
+                                WHERE r.status IN ('Zakończona', 'W trakcie')
+                                  AND EXISTS (
+                                      SELECT 1
+                                      FROM core.clean_pms_stays s
+                                      WHERE s.reservation_id = r.reservation_id
+                                        AND s.actual_check_out > s.actual_check_in
+                                  )
                             ),
                             rev_mart AS (
                                 SELECT COALESCE(SUM(room_revenue), 0) AS total_rev
