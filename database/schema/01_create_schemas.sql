@@ -1,3 +1,6 @@
+--- DO USUNIĘCIA NIE WAŻNE OD DNIA 24.11---
+
+
 -- Utworzenie schematu dla surowych danych wejściowych (bez transformacji)
 CREATE SCHEMA IF NOT EXISTS staging;
 
