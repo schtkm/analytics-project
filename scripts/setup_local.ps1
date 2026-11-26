@@ -144,7 +144,7 @@ try {
     } else {
         Push-Location -LiteralPath $generatorDir
         try {
-            Execute $python @((Join-Path $generatorDir 'generate_pms_data')) 'Generator PMS -> pms_source.db'
+            Execute $python @((Join-Path $generatorDir 'generate_pms_data.py')) 'Generator PMS -> pms_source.db'
         } finally { Pop-Location }
         Execute $python @((Join-Path $generatorDir 'generate_channel_manager.py')) 'Generator Channel Manager -> JSON'
         Execute $python @((Join-Path $generatorDir 'generate_financial_data.py')) 'Generator finansow -> CSV'
