@@ -284,7 +284,8 @@ UNION ALL SELECT 'mart.fct_reservations', count(*) FROM mart.fct_reservations;
         '-c',"SET hotelgroup.check_mart = '$martFlag';",'-f',$tempVerify) 'Weryfikacja koncowa staging/core/mart'
 
     Write-Host "`nGOTOWE: $databaseName. Tryb: $(if ($CoreOnly) {'staging + core'} else {'staging + core + mart'})." -ForegroundColor Green
-    Write-Host 'FactRoomNight nie jest automatycznie zasilany (brak skryptu US-03-05 w tej galezi).'
+    Write-Host 'UWAGA: Instalator nie zasila automatycznie FactRoomNight i FactRoomInventory (US-03-05A/B). Skrypty znajduja sie w repozytorium i wymagaja osobnego uruchomienia.' -ForegroundColor Yellow
+
 }
 catch {
     Write-Host "`nBLAD: $($_.Exception.Message)" -ForegroundColor Red
