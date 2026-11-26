@@ -31,7 +31,7 @@ Podstawowa procedura dla **nowego, pustego środowiska**:
 
 ## Dane syntetyczne
 
-- PMS: [database/generator/Readme.md](database/generator/Readme.md) — plik wykonywalny Pythona nazywa się **`generate_pms_data` (bez rozszerzenia)**.
+- PMS: [database/generator/Readme.md](database/generator/Readme.md) — plik wykonywalny Pythona nazywa się **`generate_pms_data.py`**.
 - Pozostałe źródła: `database/generator/generate_channel_manager.py` oraz `database/generator/generate_financial_data.py`.
 - Import do staging: `database/generator/Implementacja_Generatora/`.
 
