@@ -16,4 +16,4 @@ Pełny opis: `docs/US-02-02-WYNIKI-TESTOW.md`.
 
 Istotne: migracja zmienia typy dat/kwot w staging na TEXT. Dane oczyszczone mają
 właściwe typy w nowych tabelach `core.clean_*`. Istniejący core i mart nie są nadpisywane.
-Plik CI jest przygotowany w paczce; nie został opublikowany ani wykonany na GitHubie.
+Plik CI znajduje się obecnie w .github/workflows/us-02-02.yml. Wynik jego uruchomienia należy sprawdzić w zakładce GitHub Actions dla właściwego commitu; sama obecność pliku nie potwierdza zaliczenia testów.
