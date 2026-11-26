@@ -64,7 +64,7 @@ Wszystkie polecenia wykonywać z głównego katalogu repozytorium.
 ### PMS – SQLite
 
 ```powershell
-.\.venv\Scripts\python.exe .\database\generator\generate_pms_data
+.\.venv\Scripts\python.exe .\database\generator\generate_pms_data.py
 ```
 
 Wynik: `database/generator/pms_source.db`.
