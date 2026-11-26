@@ -1,7 +1,6 @@
 # US-02-02 — zacznij tutaj
 
-Paczka zawiera nową funkcjonalność do lokalnego projektu HotelGroup.
-Nie zmieniono GitHuba ani Twojej bazy PostgreSQL.
+Dokument opisuje uruchomienie funkcjonalności US-02-02 w lokalnym środowisku HotelGroup. Pliki źródłowe są wersjonowane w repozytorium GitHub. Uruchomienie migracji i procesów ETL może wprowadzać zmiany w lokalnej bazie PostgreSQL.
 
 1. Rozpakuj pliki do głównego katalogu projektu, zachowując strukturę katalogów.
 2. Otwórz **docs/US-02-02-README.md** — zawiera zasady i dokładne polecenia.
