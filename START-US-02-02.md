@@ -1,7 +1,6 @@
 # US-02-02 — zacznij tutaj
 
-Paczka zawiera nową funkcjonalność do lokalnego projektu HotelGroup.
-Nie zmieniono GitHuba ani Twojej bazy PostgreSQL.
+Dokument opisuje uruchomienie funkcjonalności US-02-02 w lokalnym środowisku HotelGroup. Pliki źródłowe są wersjonowane w repozytorium GitHub. Uruchomienie migracji i procesów ETL może wprowadzać zmiany w lokalnej bazie PostgreSQL.
 
 1. Rozpakuj pliki do głównego katalogu projektu, zachowując strukturę katalogów.
 2. Otwórz **docs/US-02-02-README.md** — zawiera zasady i dokładne polecenia.
@@ -16,4 +15,4 @@ Pełny opis: `docs/US-02-02-WYNIKI-TESTOW.md`.
 
 Istotne: migracja zmienia typy dat/kwot w staging na TEXT. Dane oczyszczone mają
 właściwe typy w nowych tabelach `core.clean_*`. Istniejący core i mart nie są nadpisywane.
-Plik CI jest przygotowany w paczce; nie został opublikowany ani wykonany na GitHubie.
+Plik CI znajduje się obecnie w .github/workflows/us-02-02.yml. Wynik jego uruchomienia należy sprawdzić w zakładce GitHub Actions dla właściwego commitu; sama obecność pliku nie potwierdza zaliczenia testów.

@@ -15,3 +15,8 @@ __pycache__/
 # Wygenerowane dane finansowe
 /database/generator/financial_data.csv
 etl/config.json
+
+# Lokalne kopie zapasowe PostgreSQL
+/backups/
+*.backup
+*.dump
