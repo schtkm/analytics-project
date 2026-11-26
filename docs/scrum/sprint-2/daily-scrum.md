@@ -61,11 +61,17 @@ Do obu zadań dodałem migracje DDL, skrypty ETL, dokumentację w docs/ oraz tes
 
 # Daily #4
 **J.M.:**
+Jestem w trakcie robienia zadania US-04-01 | Obliczanie OCC, ADR i RevPAR
 
 **K.S:**
+Brak uwag czekam na zakończenie prac
 
 **G.Z.:**
+Brak uwag czekam na zakończenie prac
 
 **S.G.:**
+Dokończyłem swoje prace a wczoraj przeprowadziliśmy zmiany w paru skryptach w razem z Kamilem i Grześkiem by były zgodnie z wymaganiami w backlogu
+Obecnie czekam na zakończenie reszty prac
 
 **K.K:**
+Nie mam żadnych uwag.
