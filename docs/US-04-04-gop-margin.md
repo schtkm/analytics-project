@@ -57,3 +57,27 @@ wynik nie stanowi pełnego księgowego GOP hotelu.
 - US-03-07 – słownik kategorii kosztowych.
 - US-03-08 – model kosztów ACTUAL/BUDGET.
 - US-04-04 – implementacja wskaźników GOP.
+
+## Uzgodnienie przychodów z PMS
+
+Przeprowadzono kontrolę zgodności przychodów pomiędzy
+`core.clean_pms_reservations`, `mart.fct_room_night`
+oraz `mart.v_gop_monthly`.
+
+Wyniki:
+- Uzgodnione rezerwacje PMS: 97 249.
+- Przychód PMS: 239 318 768,00 PLN.
+- Przychód z noclegów: 239 318 768,00 PLN.
+- Porównane kombinacje hotel × miesiąc: 192.
+- Brakujące okresy: 0.
+- Niezgodne okresy: 0.
+- Różnica przychodów: 0,00 PLN.
+
+Wynik: PASS.
+
+Kontrola PMS obejmuje rezerwacje posiadające rekordy
+w tabeli noclegów. Nie stanowi audytu wszystkich
+rezerwacji ani niezależnej weryfikacji danych źródłowych.
+
+Skrypt umożliwiający ponowne wykonanie kontroli:
+`tests/US-04-04_revenue_reconciliation.sql`.
